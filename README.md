@@ -1,2 +1,1 @@
-# POMDP Formulations of the bandit problem
-# mab
+# POMDP approaches to the multi-arm bandit problem
