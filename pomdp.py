@@ -3,15 +3,21 @@
 # based off of pomdp_py/pomdp_problems/multi_object_search
 
 import pomdp_py
+import numpy as np
+
+# Domain
+
+NUM_DOTS = 3
 
 # STATES
 GO = 0
 STOP = 1
  
 class ArmState(pomdp_py.ObjectState):
-    def __init__(self, id, shape, color, xy):
+    def __init__(self, id, prob, shape, color, xy):
         super().__init__()
         self.id = id
+        self.prob = prob
         self.shape = shape
         self.color = color
         self.xy = xy
@@ -20,6 +26,7 @@ class ArmState(pomdp_py.ObjectState):
         return f"Dot {self.xy} {self.shape} {self.color}"
 
 class AgentState(pomdp_py.ObjectState):
+    # not sure this is necessary
     def __init__(self, id):
         super().__init__()
         self.id = id
@@ -74,7 +81,7 @@ class OoObservation(pomdp_py.OOObservation):
     thus this is an OOObservation."""
     def __init__(self, obs):
         """
-        feedback (list): list of boolean feedbacks (not ObjectObservation!).
+        obs (list): list of boolean arm observations (not ObjectObservation!).
         """
         self._hashcode = hash(frozenset(obs))
         self.obs = obs
@@ -97,17 +104,75 @@ class OoObservation(pomdp_py.OOObservation):
     def factor(self, next_state, *params, **kwargs):
         """Factor this OO-observation by objects"""
         return [ArmObservation(idx, fb) for (idx, fb) in enumerate self.obs]
-        #return {objid: ObjectObservation(objid, self.objattrs[objid])
-                #for objid in next_state.object_states
-                #if objid != next_state.robot_id}
     
     @classmethod
     def merge(cls, obs, next_state, *params, **kwargs):
         """Merge `object_observations` into a single OOObservation object"""
         return OoObservation([o.feedback for o in obs])
 
-# REWARDS
+# Model
+ 
+# Observation Model
+class ObservationModel(pomdp_py.OOObservationModel):
+    def __init__(self, num_dots):
+        observation_models = [ArmObservationModel(id) for id in range(num_dots)]
+        super().__init__(observation_models)
 
+    def sample(self, next_state, action, argmax=False, **kwargs):
+        factored_observations = super().sample(next_state, action, argmax=argmax)
+        # do a max depending on bernoulli or structured feedback
+        return OoObservation.merge(factored_observations, next_state)
+
+class ArmObservationModel(pomdp_py.ObservationModel):
+    """ Frequentist bandit
+    """
+    def __init__(self, id):
+        self._id = id
+
+    def probability(self, observation, next_state, action, **kwargs):
+        # p(observation | next_state, action)
+        # for the beta bernoulli setting
+        #alpha = next_state.alpha
+        #t = next_state.t
+        #prob = alpha / t
+        #return prob if observation else 1 - prob
+        return next_state.prob if observation else 1 - next_state.prob
+
+    def sample(self, next_state, action, **kwargs):
+        import pdb; pdb.set_trace()
+        # probably needs to condition on action, i.e.
+        y = np.random.binomial(1, next_state.prob)
+        # return y if action[self._id], y ~ Bern(next_state.prob)
+        return ArmObservation(self._id, y)
+
+    def argmax(self, next_state, action, **kwargs):
+        raise NotImplementedError
+
+    #def get_all_observations(self):
+        #raise NotImplementedError
+
+# Transition Model
+class TransitionModel(pomdp_py.OOTransitionModel):
+    def __init__(self):
+        pass
+
+    def sample(self):
+        pass
+
+class ArmTransitionModel(pomdp_py.TransitionModel):
+    """ Static
+    """
+    def __init__(self):
+        pass
+
+class AgentTransitionModel(pomdp_py.TransitionModel):
+    def __init__(self):
+        pass
+
+# Reward Model
+class RewardModel(pomdp_py.RewardModel):
+    def __init__(self):
+        pass
 
 arms = [
     (0, "large", "black", (0,0)),
