@@ -1,3 +1,6 @@
+import random
+import time
+
 import numpy as np
 import pomdp_py
 
@@ -12,14 +15,15 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         num_targets,
         belief_rep="histogram", prior=None, num_particles=100,
     ):
-        delta = 0.01
+        self.delta = 0.01
+        self.num_dots = num_dots
         self.target_dots = np.random.choice(num_dots, num_targets, replace=False)
         self.dot_vector = np.zeros(num_dots, dtype=np.bool_)
         self.dot_vector[self.target_dots] = True
 
         init_true_state = ProductState({
             id: ArmState(
-                id, 1 - delta if is_good else delta,
+                id, 1 - self.delta if is_good else self.delta,
                 shape = "large", color = "grey", xy = (1,1),
             ) for id, is_good in enumerate(self.dot_vector)
         })
@@ -49,7 +53,8 @@ def solve(
         visualize (bool) if True, show the pygame visualization.
     """
 
-    random_objid = random.sample(problem.env.target_objects, 1)[0]
+    #random_objid = random.sample(problem.env.target_objects, 1)[0]
+    random_objid = random.choice(range(problem.num_dots))
     random_object_belief = problem.agent.belief.object_beliefs[random_objid]
     if isinstance(random_object_belief, pomdp_py.Histogram):
         # Use POUCT
@@ -67,18 +72,6 @@ def solve(
                                  rollout_policy=problem.agent.policy_model)  # Random by default
     else:
         raise ValueError("Unsupported object belief type %s" % str(type(random_object_belief)))
-
-    robot_id = problem.agent.robot_id
-    if visualize:
-        viz = MosViz(problem.env, controllable=False)  # controllable=False means no keyboard control.
-        if viz.on_init() == False:
-            raise Exception("Environment failed to initialize")
-        viz.update(robot_id,
-                   None,
-                   None,
-                   None,
-                   problem.agent.cur_belief)
-        viz.on_render()
 
     _time_used = 0
     _find_actions_count = 0
@@ -154,3 +147,6 @@ if __name__ == "__main__":
     num_dots = 5
     num_targets = 3
     problem = RankingAndSelectionProblem(num_dots, num_targets)
+    solve(problem)
+
+
