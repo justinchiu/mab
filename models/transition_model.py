@@ -3,9 +3,9 @@ import pomdp_py
 class TransitionModel(pomdp_py.OOTransitionModel):
     def __init__(self, num_dots, epsilon=1e-9):
         self._epsilon = epsilon
-        transition_models = [
-            ArmTransitionModel(id) for id in range(num_dots)
-        ]
+        transition_models = {
+            id: ArmTransitionModel(id) for id in range(num_dots)
+        }
         super().__init__(transition_models)
 
 
@@ -40,5 +40,14 @@ class ArmTransitionModel(pomdp_py.TransitionModel):
 
 class AgentTransitionModel(pomdp_py.TransitionModel):
     def __init__(self):
-        raise NotImplementedError
+        super().__init__()
+
+    def probability(self, next_robot_state, next_state, action):
+        pass
+
+    def argmax(self, state, action):
+        pass
+
+    def sample(self, state, action):
+        pass
 

@@ -1,13 +1,32 @@
+import numpy as np
 import pomdp_py
 
 from agent.agent import RsAgent
+from domain.state import ArmState, ProductState
 from env.env import RsEnvironment
 
 class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
-    def __init__(self):
-        agent = RsAgent()
-        env = RsEnvironment()
-        super().__init__(agent, env, "RsPomdp")
+    def __init__(
+        self,
+        num_dots,
+        num_targets,
+        belief_rep="histogram", prior=None, num_particles=100,
+    ):
+        delta = 0.01
+        self.target_dots = np.random.choice(num_dots, num_targets, replace=False)
+        self.dot_vector = np.zeros(num_dots, dtype=np.bool_)
+        self.dot_vector[self.target_dots] = True
+
+        init_true_state = ProductState({
+            id: ArmState(
+                id, 1 - delta if is_good else delta,
+                shape = "large", color = "grey", xy = (1,1),
+            ) for id, is_good in enumerate(self.dot_vector)
+        })
+
+        agent = RsAgent(num_dots, belief_rep, prior, num_particles)
+        env = RsEnvironment(num_dots, self.dot_vector, init_true_state)
+        super().__init__(agent, env, "RankingAndSelectionPomdp")
 
 ### Solve the problem with POUCT/POMCP planner ###
 ### This is the main online POMDP solver logic ###
@@ -130,3 +149,8 @@ def solve(
         if _time_used > max_time:
             print("Maximum time reached.")
             break
+
+if __name__ == "__main__":
+    num_dots = 5
+    num_targets = 3
+    problem = RankingAndSelectionProblem(num_dots, num_targets)

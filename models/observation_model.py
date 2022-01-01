@@ -3,7 +3,8 @@ import pomdp_py
 
 class ObservationModel(pomdp_py.OOObservationModel):
     def __init__(self, num_dots):
-        observation_models = [ArmObservationModel(id) for id in range(num_dots)]
+        #observation_models = [ArmObservationModel(id) for id in range(num_dots)]
+        observation_models = {id: ArmObservationModel(id) for id in range(num_dots)}
         super().__init__(observation_models)
 
     def sample(self, next_state, action, argmax=False, **kwargs):

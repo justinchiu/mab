@@ -12,22 +12,34 @@ class ArmState(pomdp_py.ObjectState):
         prob: float,
         shape: str, color: str, xy: tuple[float, float],
     ):
-        super().__init__()
-        self.id = id
-        self.prob = prob
-        self.shape = shape
-        self.color = color
-        self.xy = xy
+        super().__init__("arm", {
+            "id": id,
+            "prob": prob,
+            "shape": shape,
+            "color": color,
+            "xy": xy,
+        })
 
     def __str__(self):
         return f"Dot {self.xy} {self.shape} {self.color}"
 
 class AgentState(pomdp_py.ObjectState):
-    # not sure this is necessary
-    def __init__(self, id: int):
+    def __init__(self, id: int, state: str):
         super().__init__()
         self.id = id
-        self.state = GO
+        self.state = state
 
     def __str__(self):
-        return f"Agent {self.id}"
+        return f"Agent {self.id} ({self.state})"
+
+class Go(AgentState):
+    def __init__(self, id):
+        super().__init__(id, "go")
+
+class Stop(AgentState):
+    def __init__(self, id):
+        super().__init__(id, "stop")
+
+class ProductState(pomdp_py.OOState):
+    def __init__(self, arm_states):
+        super().__init__(arm_states)

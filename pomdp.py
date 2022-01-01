@@ -6,8 +6,7 @@ import numpy as np
 
 import pomdp_py # type: ignore
 
-from problem import RankingAndSelectionProblem
-
+from problem import RankingAndSelectionProblem, solve
 
 NUM_DOTS = 3
 
