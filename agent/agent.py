@@ -1,7 +1,7 @@
 import pomdp_py
 
 from models.policy_model import PolicyModel
-from models.transition_model import AgentTransitionModel
+from models.transition_model import ProductTransitionModel
 from models.observation_model import ObservationModel
 from models.reward_model import RewardModel
 
@@ -22,7 +22,7 @@ class RsAgent(pomdp_py.Agent):
             num_particles,
         )
         policy_model = PolicyModel(num_dots)
-        transition_model = AgentTransitionModel()
+        transition_model = ProductTransitionModel(num_dots)
         observation_model = ObservationModel(num_dots)
         reward_model = RewardModel()
         super().__init__(
@@ -33,3 +33,5 @@ class RsAgent(pomdp_py.Agent):
             reward_model = reward_model,
         )
 
+    def clear_history(self):
+        self._history = None

@@ -1,7 +1,7 @@
 import numpy as np
 import pomdp_py
 
-from models.transition_model import TransitionModel
+from models.transition_model import ProductTransitionModel
 from models.reward_model import RewardModel
 
 class RsEnvironment(pomdp_py.Environment):
@@ -9,6 +9,6 @@ class RsEnvironment(pomdp_py.Environment):
         self.num_dots = num_dots
         self.dot_vector = dot_vector
 
-        transition_model = TransitionModel(num_dots)
+        transition_model = ProductTransitionModel(num_dots)
         reward_model = RewardModel()
         super().__init__(init_state, transition_model, reward_model)

@@ -1,7 +1,7 @@
 
 import pomdp_py
 
-from domain.state import ProductState
+from domain.state import ArmState, ProductState, Go, Stop
 
 class ProductBelief(pomdp_py.OOBelief):
     def __init__(self, arm_beliefs):
@@ -47,11 +47,19 @@ def _initialize_histogram_belief(dim, prior):
     oo_hists = {}  # objid -> Histogram
     # prior should be a tensor of shape num_dots (prob True)
     oo_hists = {
-        id: pomdp_py.Histogram({True: prob, False: 1-prob})
+        #id: pomdp_py.Histogram({True: prob, False: 1-prob})
+        id+1: pomdp_py.Histogram({
+            ArmState(id+1, .99, None, None, None): prob,
+            ArmState(id+1, .01, None, None, None): 1-prob,
+        })
         for (id, prob) in enumerate(prior)
     }
+    oo_hists[0] = pomdp_py.Histogram({
+        Go(): .99,
+        Stop(): .01,
+    })
 
-    # swap to numpy array, dict is super slow
+    # TODO: swap to numpy array, dict is super slow
     return ProductBelief(oo_hists)
 
 

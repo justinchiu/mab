@@ -5,7 +5,7 @@ import numpy as np
 import pomdp_py
 
 from agent.agent import RsAgent
-from domain.state import ArmState, ProductState
+from domain.state import ArmState, ProductState, Go
 from env.env import RsEnvironment
 
 class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
@@ -21,16 +21,78 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         self.dot_vector = np.zeros(num_dots, dtype=np.bool_)
         self.dot_vector[self.target_dots] = True
 
-        init_true_state = ProductState({
-            id: ArmState(
-                id, 1 - self.delta if is_good else self.delta,
+        state = {
+            id+1: ArmState(
+                id+1, 1 - self.delta if is_good else self.delta,
                 shape = "large", color = "grey", xy = (1,1),
             ) for id, is_good in enumerate(self.dot_vector)
-        })
+        }
+        state[0] = Go()
+        init_true_state = ProductState(state)
 
         agent = RsAgent(num_dots, belief_rep, prior, num_particles)
         env = RsEnvironment(num_dots, self.dot_vector, init_true_state)
         super().__init__(agent, env, "RankingAndSelectionPomdp")
+
+### Belief Update
+# ....... why is this here?
+### Belief Update ###
+def belief_update(agent, real_action, real_observation, next_robot_state, planner):
+    """Updates the agent's belief; The belief update may happen
+    through planner update (e.g. when planner is POMCP)."""
+    # Updates the planner; In case of POMCP, agent's belief is also updated.
+    planner.update(agent, real_action, real_observation)
+
+    # Update agent's belief, when planner is not POMCP
+    if not isinstance(planner, pomdp_py.POMCP):
+        # Update belief for every object
+        for objid in agent.cur_belief.object_beliefs:
+            belief_obj = agent.cur_belief.object_belief(objid)
+            if isinstance(belief_obj, pomdp_py.Histogram):
+                if objid == agent.robot_id:
+                    # Assuming the agent can observe its own state:
+                    new_belief = pomdp_py.Histogram({next_robot_state: 1.0})
+                else:
+                    # This is doing
+                    #    B(si') = normalizer * O(oi|si',sr',a) * sum_s T(si'|s,a)*B(si)
+                    #
+                    # Notes: First, objects are static; Second,
+                    # O(oi|s',a) ~= O(oi|si',sr',a) according to the definition
+                    # of the observation model in models/observation.py.  Note
+                    # that the exact belief update rule for this OOPOMDP needs to use
+                    # a model like O(oi|si',sr',a) because it's intractable to
+                    # consider s' (that means all combinations of all object
+                    # states must be iterated).  Of course, there could be work
+                    # around (out of scope) - Consider a volumetric observaiton,
+                    # instead of the object-pose observation. That means oi is a
+                    # set of pixels (2D) or voxels (3D). Note the real
+                    # observation, oi, is most likely sampled from O(oi|s',a)
+                    # because real world considers the occlusion between objects
+                    # (due to full state s'). The problem is how to compute the
+                    # probability of this oi given s' and a, where it's
+                    # intractable to obtain s'. To this end, we can make a
+                    # simplifying assumption that an object is contained within
+                    # one pixel (or voxel); The pixel (or voxel) is labeled to
+                    # indicate free space or object. The label of each pixel or
+                    # voxel is certainly a result of considering the full state
+                    # s. The occlusion can be handled nicely with the volumetric
+                    # observation definition. Then that assumption can reduce the
+                    # observation model from O(oi|s',a) to O(label_i|s',a) and
+                    # it becomes easy to define O(label_i=i|s',a) and O(label_i=FREE|s',a).
+                    # These ideas are used in my recent 3D object search work.
+                    new_belief = pomdp_py.update_histogram_belief(belief_obj,
+                                                                  real_action,
+                                                                  real_observation.for_obj(objid),
+                                                                  agent.observation_model[objid],
+                                                                  agent.transition_model[objid],
+                                                                  # The agent knows the objects are static.
+                                                                  static_transition=objid != agent.robot_id,
+                                                                  oargs={"next_robot_state": next_robot_state})
+            else:
+                raise ValueError("Unexpected program state."\
+                                 "Are you using the appropriate belief representation?")
+
+            agent.cur_belief.set_object_belief(objid, new_belief)
 
 ### Solve the problem with POUCT/POMCP planner ###
 ### This is the main online POMDP solver logic ###
@@ -85,8 +147,7 @@ def solve(
             break  # no more time to update.
 
         # Execute action
-        reward = problem.env.state_transition(real_action, execute=True,
-                                              robot_id=robot_id)
+        reward = problem.env.state_transition(real_action, execute=True)
 
         # Receive observation
         _start = time.time()

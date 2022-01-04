@@ -1,10 +1,14 @@
 
+import numpy as np
 import pomdp_py
+
+from domain.observation import ArmObservation, ProductObservation
 
 class ObservationModel(pomdp_py.OOObservationModel):
     def __init__(self, num_dots):
         #observation_models = [ArmObservationModel(id) for id in range(num_dots)]
-        observation_models = {id: ArmObservationModel(id) for id in range(num_dots)}
+        observation_models = {id: ArmObservationModel(id) for id in range(1, num_dots+1)}
+        # no arm observation model
         super().__init__(observation_models)
 
     def sample(self, next_state, action, argmax=False, **kwargs):
@@ -16,7 +20,7 @@ class ArmObservationModel(pomdp_py.ObservationModel):
     """ Frequentist bandit
     """
     def __init__(self, id):
-        self._id = id
+        self.id = id
 
     def probability(self, observation, next_state, action, **kwargs):
         # p(observation | next_state, action)
@@ -25,14 +29,15 @@ class ArmObservationModel(pomdp_py.ObservationModel):
         #t = next_state.t
         #prob = alpha / t
         #return prob if observation else 1 - prob
-        return next_state.prob if observation else 1 - next_state.prob
+        prob = next_state.object_states[self.id]["prob"]
+        return prob if observation else 1 - prob
 
     def sample(self, next_state, action, **kwargs):
-        import pdb; pdb.set_trace()
+        prob = next_state.object_states[self.id]["prob"]
         # probably needs to condition on action, i.e.
-        y = np.random.binomial(1, next_state.prob)
-        # return y if action[self._id], y ~ Bern(next_state.prob)
-        return ArmObservation(self._id, y)
+        y = np.random.binomial(1, prob)
+        # return y if action[self.id], y ~ Bern(next_state.prob)
+        return ArmObservation(self.id, y)
 
     def argmax(self, next_state, action, **kwargs):
         raise NotImplementedError
