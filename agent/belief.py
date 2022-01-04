@@ -54,10 +54,13 @@ def _initialize_histogram_belief(dim, prior):
         })
         for (id, prob) in enumerate(prior)
     }
-    oo_hists[0] = pomdp_py.Histogram({
-        Go(): .99,
-        Stop(): .01,
-    })
+    agent_states = {
+        Stop(id): .01
+        for id in range(dim)
+    }
+    agent_states[Go()] = 1. - dim * .01
+
+    oo_hists[0] = pomdp_py.Histogram(agent_states)
 
     # TODO: swap to numpy array, dict is super slow
     return ProductBelief(oo_hists)

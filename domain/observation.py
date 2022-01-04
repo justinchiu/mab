@@ -29,6 +29,12 @@ class ProductObservation(pomdp_py.OOObservation):
         self._hashcode = hash(frozenset(obs))
         self.obs = obs
 
+    def for_obj(self, id):
+        if id in self.obs:
+            return ArmObservation(id, self.obs[id])
+        else:
+            return ArmObservation(id, ObjectObservation.NULL)
+
     def __hash__(self):
         return self._hashcode
     

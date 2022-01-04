@@ -15,6 +15,7 @@ class RsAgent(pomdp_py.Agent):
         prior,
         num_particles=100,
     ):
+        self.id = 0
         init_belief = initialize_belief(
             num_dots,
             prior,

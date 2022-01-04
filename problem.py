@@ -5,7 +5,8 @@ import numpy as np
 import pomdp_py
 
 from agent.agent import RsAgent
-from domain.state import ArmState, ProductState, Go
+from domain.action import Ask
+from domain.state import ArmState, ProductState, Go, Stop
 from env.env import RsEnvironment
 
 class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
@@ -35,7 +36,8 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         super().__init__(agent, env, "RankingAndSelectionPomdp")
 
 ### Belief Update
-# ....... why is this here?
+# why is this here instead of in the particle filter?
+# seems like this is only run for UCT, maybe stick to POMCP in general then?
 ### Belief Update ###
 def belief_update(agent, real_action, real_observation, next_robot_state, planner):
     """Updates the agent's belief; The belief update may happen
@@ -49,7 +51,7 @@ def belief_update(agent, real_action, real_observation, next_robot_state, planne
         for objid in agent.cur_belief.object_beliefs:
             belief_obj = agent.cur_belief.object_belief(objid)
             if isinstance(belief_obj, pomdp_py.Histogram):
-                if objid == agent.robot_id:
+                if objid == agent.id:
                     # Assuming the agent can observe its own state:
                     new_belief = pomdp_py.Histogram({next_robot_state: 1.0})
                 else:
@@ -62,32 +64,17 @@ def belief_update(agent, real_action, real_observation, next_robot_state, planne
                     # that the exact belief update rule for this OOPOMDP needs to use
                     # a model like O(oi|si',sr',a) because it's intractable to
                     # consider s' (that means all combinations of all object
-                    # states must be iterated).  Of course, there could be work
-                    # around (out of scope) - Consider a volumetric observaiton,
-                    # instead of the object-pose observation. That means oi is a
-                    # set of pixels (2D) or voxels (3D). Note the real
-                    # observation, oi, is most likely sampled from O(oi|s',a)
-                    # because real world considers the occlusion between objects
-                    # (due to full state s'). The problem is how to compute the
-                    # probability of this oi given s' and a, where it's
-                    # intractable to obtain s'. To this end, we can make a
-                    # simplifying assumption that an object is contained within
-                    # one pixel (or voxel); The pixel (or voxel) is labeled to
-                    # indicate free space or object. The label of each pixel or
-                    # voxel is certainly a result of considering the full state
-                    # s. The occlusion can be handled nicely with the volumetric
-                    # observation definition. Then that assumption can reduce the
-                    # observation model from O(oi|s',a) to O(label_i|s',a) and
-                    # it becomes easy to define O(label_i=i|s',a) and O(label_i=FREE|s',a).
-                    # These ideas are used in my recent 3D object search work.
-                    new_belief = pomdp_py.update_histogram_belief(belief_obj,
-                                                                  real_action,
-                                                                  real_observation.for_obj(objid),
-                                                                  agent.observation_model[objid],
-                                                                  agent.transition_model[objid],
-                                                                  # The agent knows the objects are static.
-                                                                  static_transition=objid != agent.robot_id,
-                                                                  oargs={"next_robot_state": next_robot_state})
+                    # states must be iterated). 
+                    new_belief = pomdp_py.update_histogram_belief(
+                        belief_obj,
+                        real_action,
+                        real_observation.for_obj(objid),
+                        agent.observation_model[objid],
+                        agent.transition_model[objid],
+                        # The agent knows the objects are static.
+                        static_transition=objid != agent.id,
+                        oargs={"next_robot_state": next_robot_state,
+                    })
             else:
                 raise ValueError("Unexpected program state."\
                                  "Are you using the appropriate belief representation?")
@@ -158,13 +145,13 @@ def solve(
         problem.agent.clear_history()  # truncate history
         problem.agent.update_history(real_action, real_observation)
         belief_update(problem.agent, real_action, real_observation,
-                      problem.env.state.object_states[robot_id],
+                      problem.env.state.object_states[0],
                       planner)
         _time_used += time.time() - _start
 
         # Info and render
         _total_reward += reward
-        if isinstance(real_action, FindAction):
+        if isinstance(real_action, Ask):
             _find_actions_count += 1
         print("==== Step %d ====" % (i+1))
         print("Action: %s" % str(real_action))
@@ -176,6 +163,7 @@ def solve(
             print("__num_sims__: %d" % planner.last_num_sims)
 
         if visualize:
+            raise NotImplementedError
             # This is used to show the sensing range; Not sampled
             # according to observation model.
             robot_pose = problem.env.state.object_states[robot_id].pose
@@ -193,8 +181,9 @@ def solve(
             viz.on_render()
 
         # Termination check
-        if set(problem.env.state.object_states[robot_id].objects_found)\
-           == problem.env.target_objects:
+        agent_state = problem.env.state.object_states[0]
+        stopped = isinstance(agent_state, Stop)
+        if problem.dot_vector[agent_state.id]:
             print("Done!")
             break
         if _find_actions_count >= len(problem.env.target_objects):
@@ -208,6 +197,6 @@ if __name__ == "__main__":
     num_dots = 5
     num_targets = 3
     problem = RankingAndSelectionProblem(num_dots, num_targets)
-    solve(problem)
+    solve(problem, visualize=False)
 
 

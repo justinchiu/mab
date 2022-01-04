@@ -29,13 +29,14 @@ class ArmObservationModel(pomdp_py.ObservationModel):
         #t = next_state.t
         #prob = alpha / t
         #return prob if observation else 1 - prob
-        prob = next_state.object_states[self.id]["prob"]
+        #prob = next_state.object_states[self.id]["prob"]
+        prob = next_state["prob"]
         return prob if observation else 1 - prob
 
     def sample(self, next_state, action, **kwargs):
         prob = next_state.object_states[self.id]["prob"]
-        # probably needs to condition on action, i.e.
-        y = np.random.binomial(1, prob)
+        # TODO: handle vector-valued action
+        y = np.random.binomial(1, prob) if action == self.id else 0
         # return y if action[self.id], y ~ Bern(next_state.prob)
         return ArmObservation(self.id, y)
 

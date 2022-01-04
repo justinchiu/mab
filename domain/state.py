@@ -40,8 +40,12 @@ class Go(AgentState):
         super().__init__("go")
 
 class Stop(AgentState):
-    def __init__(self):
+    def __init__(self, id):
         super().__init__("stop")
+        self.id = id
+
+    def __str__(self):
+        return f"Agent ({self.state}: {self.id})"
 
 class ProductState(pomdp_py.OOState):
     def __init__(self, arm_states):

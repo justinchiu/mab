@@ -55,8 +55,11 @@ class AgentTransitionModel(pomdp_py.TransitionModel):
         pass
 
     def argmax(self, state, action):
-        if isinstance(action, Select) or isinstance(state, Stop):
-            return Stop()
+        if isinstance(state, Stop):
+            # no change if already stopped
+            return state
+        elif isinstance(action, Select):
+            return Stop(action.val)
         elif isinstance(action, Ask):
             return Go()
 
