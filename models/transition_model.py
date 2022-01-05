@@ -1,3 +1,7 @@
+# URGENT TODO: Does the implementation of POMCP require state transition
+# models to reset the state automatically?
+
+
 import copy
 import pomdp_py
 
