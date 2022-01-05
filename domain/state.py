@@ -46,6 +46,14 @@ class Stop(AgentState):
     def __str__(self):
         return f"Agent ({self.state}: {self.id})"
 
+class CounterState(pomdp_py.ObjectState):
+    def __init__(self, T):
+        super().__init__("counter", {"counter": T})
+        self.counter = T
+
+    def __str__(self):
+        return f"Agent ({self.state})"
+
 class ProductState(pomdp_py.OOState):
     def __init__(self, arm_states):
         super().__init__(arm_states)

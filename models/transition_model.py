@@ -1,6 +1,4 @@
-# URGENT TODO: Does the implementation of POMCP require state transition
-# models to reset the state automatically?
-
+# URGENT TODO: PO-UCT does not handle termination states
 
 import copy
 import pomdp_py
