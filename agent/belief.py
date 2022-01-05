@@ -51,7 +51,7 @@ def _initialize_histogram_belief(dim, prior, num_bins):
     # prior should be a tensor of shape num_dots (prob True)
     oo_hists = {
         id+1: pomdp_py.Histogram({
-            ArmState(id+1, p, None, None, None): prob
+            ArmState(id, p, None, None, None): prob
             for p, prob in zip(np.linspace(.01, .99, num_bins), probs)
         })
         for (id, probs) in enumerate(prior)

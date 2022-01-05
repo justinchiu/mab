@@ -1,6 +1,8 @@
 import random
 import time
 
+from copy import deepcopy
+
 import numpy as np
 import pomdp_py
 
@@ -9,12 +11,18 @@ from domain.action import Ask
 from domain.state import ArmState, ProductState, Go, Stop
 from env.env import RsEnvironment
 
+DBG_OUTER = True
+DBG_UPDATE = False
+
+
 class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
     def __init__(
         self,
         num_dots,
         num_targets,
-        belief_rep="histogram", prior=None, num_particles=100,
+        belief_rep="histogram", prior=None,
+        num_particles=100,
+        num_bins = 5,
     ):
         self.delta = 0.01
         self.num_dots = num_dots
@@ -24,14 +32,14 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
 
         state = {
             id+1: ArmState(
-                id+1, 1 - self.delta if is_good else self.delta,
+                id, 1 - self.delta if is_good else self.delta,
                 shape = "large", color = "grey", xy = (1,1),
             ) for id, is_good in enumerate(self.dot_vector)
         }
         state[0] = Go()
         init_true_state = ProductState(state)
 
-        agent = RsAgent(num_dots, belief_rep, prior, num_particles)
+        agent = RsAgent(num_dots, belief_rep, prior, num_particles, num_bins)
         env = RsEnvironment(num_dots, self.dot_vector, init_true_state)
         super().__init__(agent, env, "RankingAndSelectionPomdp")
 
@@ -50,13 +58,21 @@ def belief_update(agent, real_action, real_observation, next_robot_state, planne
         # Update belief for every object
         for objid in agent.cur_belief.object_beliefs:
             belief_obj = agent.cur_belief.object_belief(objid)
-            #print("old belief")
-            #print(belief_obj.histogram)
+            if DBG_UPDATE:
+                print("action:")
+                print(real_action)
+                print("observation:")
+                print(real_observation)
+                print("next robot state")
+                print(next_robot_state)
+                print("old belief")
+                print(belief_obj.histogram)
             if isinstance(belief_obj, pomdp_py.Histogram):
                 if objid == agent.id:
                     # Assuming the agent can observe its own state:
                     new_belief = pomdp_py.Histogram({next_robot_state: 1.0})
-                else:
+                #else:
+                elif isinstance(real_action, Ask) and objid == real_action.val+1:
                     # This is doing
                     #    B(si') = normalizer * O(oi|si',sr',a) * sum_s T(si'|s,a)*B(si)
                     #
@@ -77,9 +93,12 @@ def belief_update(agent, real_action, real_observation, next_robot_state, planne
                         static_transition=objid != agent.id,
                         oargs={"next_robot_state": next_robot_state,
                     })
-                    #print("new belief")
-                    #print(new_belief)
-                    #import pdb; pdb.set_trace()
+                    if DBG_UPDATE:
+                        print("new belief")
+                        print(new_belief)
+                else:
+                    # same
+                    new_belief = deepcopy(belief_obj)
             else:
                 raise ValueError("Unexpected program state."\
                                  "Are you using the appropriate belief representation?")
@@ -135,8 +154,10 @@ def solve(
         print(problem.agent.cur_belief.object_beliefs[2].histogram)
         print(problem.agent.cur_belief.object_beliefs[3].histogram)
         print(problem.agent.cur_belief.object_beliefs[4].histogram)
-    print("initial belief")
-    print_belief()
+        print(problem.agent.cur_belief.object_beliefs[5].histogram)
+    if DBG_OUTER:
+        print("initial belief")
+        print_belief()
 
     _time_used = 0
     _find_actions_count = 0
@@ -179,9 +200,10 @@ def solve(
         if isinstance(planner, pomdp_py.POUCT):
             print("__num_sims__: %d" % planner.last_num_sims)
 
-        print("new belief")
-        print_belief()
-        import pdb; pdb.set_trace()
+        if DBG_OUTER:
+            print("new belief")
+            print_belief()
+            import pdb; pdb.set_trace()
 
         if visualize:
             raise NotImplementedError
@@ -205,7 +227,10 @@ def solve(
         agent_state = problem.env.state.object_states[0]
         stopped = isinstance(agent_state, Stop)
         if stopped and problem.dot_vector[agent_state.id]:
-            print("Done!")
+            print("Success!")
+            break
+        if stopped and not problem.dot_vector[agent_state.id]:
+            print("Failure")
             break
         if _time_used > max_time:
             print("Maximum time reached.")
@@ -213,8 +238,7 @@ def solve(
 
 if __name__ == "__main__":
     num_dots = 5
-    num_targets = 3
-    num_targets = 1
+    num_targets = 2
     problem = RankingAndSelectionProblem(num_dots, num_targets)
     #problem = RankingAndSelectionProblem(num_dots, num_targets, belief_rep="particle")
     solve(problem, visualize=False)

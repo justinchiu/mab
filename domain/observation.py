@@ -8,6 +8,7 @@ class ArmObservation(pomdp_py.Observation):
 
     def __hash__(self):
         return hash((self.objid, self.feedback))
+
     def __eq__(self, other):
         if not isinstance(other, ObjectObservation):
             return False
@@ -16,6 +17,9 @@ class ArmObservation(pomdp_py.Observation):
                 self.objid == other.objid
                 and self.feedback == other.feedback
             )
+
+    def __str__(self):
+        return f"ArmObs {self.objid} ({self.feedback})"
 
 class ProductObservation(pomdp_py.OOObservation):
     """Observation for MAB that can be factored by arms;
