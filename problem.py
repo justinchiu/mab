@@ -50,6 +50,8 @@ def belief_update(agent, real_action, real_observation, next_robot_state, planne
         # Update belief for every object
         for objid in agent.cur_belief.object_beliefs:
             belief_obj = agent.cur_belief.object_belief(objid)
+            #print("old belief")
+            #print(belief_obj.histogram)
             if isinstance(belief_obj, pomdp_py.Histogram):
                 if objid == agent.id:
                     # Assuming the agent can observe its own state:
@@ -75,6 +77,9 @@ def belief_update(agent, real_action, real_observation, next_robot_state, planne
                         static_transition=objid != agent.id,
                         oargs={"next_robot_state": next_robot_state,
                     })
+                    #print("new belief")
+                    #print(new_belief)
+                    #import pdb; pdb.set_trace()
             else:
                 raise ValueError("Unexpected program state."\
                                  "Are you using the appropriate belief representation?")
@@ -122,6 +127,17 @@ def solve(
     else:
         raise ValueError("Unsupported object belief type %s" % str(type(random_object_belief)))
 
+    print(f"True state: {problem.env.dot_vector}")
+
+    def print_belief():
+        print(problem.agent.cur_belief.object_beliefs[0].histogram)
+        print(problem.agent.cur_belief.object_beliefs[1].histogram)
+        print(problem.agent.cur_belief.object_beliefs[2].histogram)
+        print(problem.agent.cur_belief.object_beliefs[3].histogram)
+        print(problem.agent.cur_belief.object_beliefs[4].histogram)
+    print("initial belief")
+    print_belief()
+
     _time_used = 0
     _find_actions_count = 0
     _total_reward = 0  # total, undiscounted reward
@@ -149,6 +165,7 @@ def solve(
                       planner)
         _time_used += time.time() - _start
 
+
         # Info and render
         _total_reward += reward
         if isinstance(real_action, Ask):
@@ -161,6 +178,10 @@ def solve(
         print("Find Actions Count: %d" %  _find_actions_count)
         if isinstance(planner, pomdp_py.POUCT):
             print("__num_sims__: %d" % planner.last_num_sims)
+
+        print("new belief")
+        print_belief()
+        import pdb; pdb.set_trace()
 
         if visualize:
             raise NotImplementedError
@@ -183,11 +204,8 @@ def solve(
         # Termination check
         agent_state = problem.env.state.object_states[0]
         stopped = isinstance(agent_state, Stop)
-        if problem.dot_vector[agent_state.id]:
+        if stopped and problem.dot_vector[agent_state.id]:
             print("Done!")
-            break
-        if _find_actions_count >= len(problem.env.target_objects):
-            print("FindAction limit reached.")
             break
         if _time_used > max_time:
             print("Maximum time reached.")
@@ -196,7 +214,9 @@ def solve(
 if __name__ == "__main__":
     num_dots = 5
     num_targets = 3
+    num_targets = 1
     problem = RankingAndSelectionProblem(num_dots, num_targets)
+    #problem = RankingAndSelectionProblem(num_dots, num_targets, belief_rep="particle")
     solve(problem, visualize=False)
 
 

@@ -54,10 +54,13 @@ class AgentTransitionModel(pomdp_py.TransitionModel):
     def probability(self, next_robot_state, next_state, action):
         pass
 
-    def argmax(self, state, action):
-        if isinstance(state, Stop):
+    def argmax(self, product_state, action):
+        assert isinstance(product_state, ProductState)
+        state = product_state.object_states[0]
+        if  isinstance(state, Stop):
             # no change if already stopped
             return state
+            #return product_state
         elif isinstance(action, Select):
             return Stop(action.val)
         elif isinstance(action, Ask):

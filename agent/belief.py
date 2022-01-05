@@ -1,4 +1,6 @@
 
+import numpy as np
+
 import pomdp_py
 
 from domain.state import ArmState, ProductState, Go, Stop
@@ -19,6 +21,7 @@ def initialize_belief(
     prior,
     representation="histogram",
     num_particles=100,
+    num_bins=10,
 ):
     """
     Returns a GenerativeDistribution that is the belief representation for
@@ -31,28 +34,27 @@ def initialize_belief(
         GenerativeDistribution: the initial belief representation.
     """
     if representation == "histogram":
-        return _initialize_histogram_belief(num_dots, prior)
+        return _initialize_histogram_belief(num_dots, prior, num_bins=num_bins)
     elif representation == "particles":
         return _initialize_particles_belief(num_dots, prior, num_particles=num_particles)
     else:
         raise ValueError("Unsupported belief representation %s" % representation)
 
     
-def _initialize_histogram_belief(dim, prior):
+def _initialize_histogram_belief(dim, prior, num_bins):
     """
     Returns the belief distribution represented as a histogram
     """
     if prior is None:
-        prior = [0.5 for _ in range(dim)]
+        prior = [[1. / num_bins for _ in range(num_bins)] for _ in range(dim)]
     oo_hists = {}  # objid -> Histogram
     # prior should be a tensor of shape num_dots (prob True)
     oo_hists = {
-        #id: pomdp_py.Histogram({True: prob, False: 1-prob})
         id+1: pomdp_py.Histogram({
-            ArmState(id+1, .99, None, None, None): prob,
-            ArmState(id+1, .01, None, None, None): 1-prob,
+            ArmState(id+1, p, None, None, None): prob
+            for p, prob in zip(np.linspace(.01, .99, num_bins), probs)
         })
-        for (id, prob) in enumerate(prior)
+        for (id, probs) in enumerate(prior)
     }
     agent_states = {
         Stop(id): .01
@@ -62,7 +64,7 @@ def _initialize_histogram_belief(dim, prior):
 
     oo_hists[0] = pomdp_py.Histogram(agent_states)
 
-    # TODO: swap to numpy array, dict is super slow
+    # TODO: swap to numpy array, dict is super slow?
     return ProductBelief(oo_hists)
 
 
@@ -80,6 +82,8 @@ def _initialize_particles_belief(
     """
     # For the robot, we assume it can observe its own state;
     # Its pose must have been provided in the `prior`.
+    raise NotImplementedError
+
     assert robot_id in prior, "Missing initial robot pose in prior."
     init_robot_pose = list(prior[robot_id].keys())[0]
     

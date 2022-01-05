@@ -14,9 +14,9 @@ class Action(pomdp_py.Action):
         elif type(other) == str:
             return self.name == other
     def __str__(self):
-        return self.name
+        return f"Action({self.name}, {self.val})"
     def __repr__(self):
-        return f"Action({self.name}): {self.val}"
+        return f"Action({self.name}, {self.val})"
 
 class Ask(Action):
     def __init__(self, ids):
@@ -25,3 +25,7 @@ class Ask(Action):
 class Select(Action):
     def __init__(self, id):
         super().__init__("select", id)
+
+class Pass(Action):
+    def __init__(self):
+        super().__init__("select", 0)
