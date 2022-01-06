@@ -11,7 +11,7 @@ from domain.action import Ask
 from domain.state import ArmState, ProductState, Go, Stop
 from env.env import RsEnvironment
 
-DBG_OUTER = True
+DBG_OUTER = False
 DBG_UPDATE = False
 
 
@@ -111,7 +111,8 @@ def solve(
     problem,
     max_depth=3,  # planning horizon
     discount_factor=0.99,
-    planning_time=5.,       # amount of time (s) to plan each step
+    #planning_time=5.,       # amount of time (s) to plan each step
+    num_sims=10000,
     exploration_const=1000, # exploration constant
     visualize=True,
     max_time=120,  # maximum amount of time allowed to solve the problem
@@ -133,14 +134,16 @@ def solve(
         # Use POUCT
         planner = pomdp_py.POUCT(max_depth=max_depth,
                                  discount_factor=discount_factor,
-                                 planning_time=planning_time,
+                                 #planning_time=planning_time,
+                                 num_sims = num_sims,
                                  exploration_const=exploration_const,
                                  rollout_policy=problem.agent.policy_model)  # Random by default
     elif isinstance(random_object_belief, pomdp_py.Particles):
         # Use POMCP
         planner = pomdp_py.POMCP(max_depth=max_depth,
                                  discount_factor=discount_factor,
-                                 planning_time=planning_time,
+                                 #planning_time=planning_time,
+                                 num_sims = num_sims,
                                  exploration_const=exploration_const,
                                  rollout_policy=problem.agent.policy_model)  # Random by default
     else:
