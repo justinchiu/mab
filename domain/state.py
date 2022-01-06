@@ -57,3 +57,6 @@ class CountdownState(pomdp_py.ObjectState):
 class ProductState(pomdp_py.OOState):
     def __init__(self, arm_states):
         super().__init__(arm_states)
+
+if __name__ == "__main__":
+    print("Testing state definitions")

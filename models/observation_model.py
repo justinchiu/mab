@@ -61,3 +61,5 @@ class ArmObservationModel(pomdp_py.ObservationModel):
     #def get_all_observations(self):
         #raise NotImplementedError
 
+if __name__ == "__main__":
+    print("Testing observation models")

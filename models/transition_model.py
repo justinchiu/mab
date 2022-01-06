@@ -83,3 +83,7 @@ class CountdownTransitionModel(pomdp_py.TransitionModel):
 
     def sample(self, state, action):
         return self.argmax(state, action)
+
+
+if __name__ == "__main__":
+    print("Testing transition models")

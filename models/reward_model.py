@@ -37,3 +37,6 @@ class RewardModel(pomdp_py.RewardModel):
     def sample(self, state, action, next_state):
         # deterministic?
         return self._reward_func(state, action)
+
+if __name__ == "__main__":
+    print("Testing reward model")

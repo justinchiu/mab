@@ -69,3 +69,6 @@ class ProductObservation(pomdp_py.OOObservation):
             id: arm_obs.feedback for (id, arm_obs) in obs.items()
         })
 
+
+if __name__ == "__main__":
+    print("Testing observations")

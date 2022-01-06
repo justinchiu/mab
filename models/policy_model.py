@@ -25,3 +25,6 @@ class PolicyModel(pomdp_py.RandomRollout):
         elif isinstance(robot_state, Stop):
             return [Pass()]
         """
+
+if __name__ == "__main__":
+    print("Testing policy model")
