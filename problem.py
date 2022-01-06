@@ -12,8 +12,8 @@ from domain.action import Ask
 from domain.state import ArmState, ProductState, Go, Stop, CountdownState
 from env.env import RsEnvironment
 
-DBG_OUTER = True
-DBG_UPDATE = True
+DBG_OUTER = False
+DBG_UPDATE = False
 
 
 class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
@@ -28,10 +28,11 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
     ):
         self.delta = 0.01
         self.num_dots = num_dots
-        self.target_dots = np.random.choice(num_dots, num_targets, replace=False)
-        self.dot_vector = np.zeros(num_dots, dtype=np.bool_)
-        self.dot_vector[self.target_dots] = True
+        self.num_targets = num_targets
         self.max_turns = max_turns
+
+        # sets up self.target_dots and self.dot_vector
+        self.initialize_dots()
 
         state = {
             id: ArmState(
@@ -46,6 +47,14 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         agent = RsAgent(num_dots, max_turns, belief_rep, prior, num_particles, num_bins)
         env = RsEnvironment(num_dots, self.dot_vector, init_true_state)
         super().__init__(agent, env, "RankingAndSelectionPomdp")
+
+    def initialize_dots(self):
+        """ sets up self.target_dots and self.dot_vector
+            call to randomly re-initialize problem
+        """
+        self.target_dots = np.random.choice(self.num_dots, self.num_targets, replace=False)
+        self.dot_vector = np.zeros(self.num_dots, dtype=np.bool_)
+        self.dot_vector[self.target_dots] = True
 
 ### Belief Update
 # why is this here instead of in the particle filter?
@@ -240,7 +249,7 @@ def solve(
             viz.on_render()
 
         # Termination check
-        agent_state = problem.env.state.object_states[0]
+        agent_state = problem.env.state.object_states[problem.agent.id]
         stopped = isinstance(agent_state, Stop)
         if stopped and problem.dot_vector[agent_state.id]:
             print("Success!")
@@ -257,20 +266,29 @@ if __name__ == "__main__":
     num_targets = 2
     max_turns = num_dots
     # Test POUCT
-    problem = RankingAndSelectionProblem(num_dots, num_targets, max_turns)
+    problem = RankingAndSelectionProblem(
+        num_dots, num_targets, max_turns,
+        num_bins=3,
+        belief_rep="histogram",
+    )
+    #"""
     planner = pomdp_py.POUCT(
         max_depth=5,
         discount_factor=1,
-        num_sims = 100000,
-        exploration_const=1000,
+        num_sims = 20000,
+        exploration_const=100,
         rollout_policy=problem.agent.policy_model)  # Random by default
     action = planner.plan(problem.agent)
     dd = TreeDebugger(problem.agent.tree)
-    import pdb; pdb.set_trace()
-    solve(problem, visualize=False)
+    # Observation: needs an extremely large number of simulations if symmetry
+    # is not taken advantage of.
+    # Is POMCP better?
+    #"""
+    solve(problem, visualize=False, num_sims=50000)
+    import sys; sys.exit()
 
     # Test POMCP
-    problem = RankingAndSelectionProblem(num_dots, num_targets, belief_rep="particles")
+    problem = RankingAndSelectionProblem(num_dots, num_targets, max_turns, belief_rep="particles")
     solve(problem, visualize=False)
 
 
