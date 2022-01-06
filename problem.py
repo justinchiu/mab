@@ -109,13 +109,13 @@ def belief_update(agent, real_action, real_observation, next_robot_state, planne
 ### This is the main online POMDP solver logic ###
 def solve(
     problem,
-    max_depth=10,  # planning horizon
+    max_depth=3,  # planning horizon
     discount_factor=0.99,
-    planning_time=1.,       # amount of time (s) to plan each step
+    planning_time=5.,       # amount of time (s) to plan each step
     exploration_const=1000, # exploration constant
     visualize=True,
     max_time=120,  # maximum amount of time allowed to solve the problem
-    max_steps=500,
+    max_steps=5
 ): # maximum number of planning steps the agent can take.
     """
     This function terminates when:
