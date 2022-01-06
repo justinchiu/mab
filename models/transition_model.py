@@ -4,15 +4,16 @@ import copy
 import pomdp_py
 
 from domain.action import Ask, Select
-from domain.state import Go, Stop, ProductState
+from domain.state import Go, Stop, CountdownState, ProductState
 
 class ProductTransitionModel(pomdp_py.OOTransitionModel):
-    def __init__(self, num_dots, epsilon=1e-9):
+    def __init__(self, num_dots, max_turns=5, epsilon=1e-9):
         self._epsilon = epsilon
         transition_models = {
-            id: ArmTransitionModel(id) for id in range(1, num_dots+1)
+            id: ArmTransitionModel(id) for id in range(num_dots)
         }
-        transition_models[0] = AgentTransitionModel(0)
+        transition_models[num_dots] = AgentTransitionModel(num_dots)
+        transition_models[num_dots+1] = CountdownTransitionModel(num_dots+1)
         super().__init__(transition_models)
 
 
@@ -58,7 +59,7 @@ class AgentTransitionModel(pomdp_py.TransitionModel):
 
     def argmax(self, product_state, action):
         assert isinstance(product_state, ProductState)
-        state = product_state.object_states[0]
+        state = product_state.object_states[self.id]
         if  isinstance(state, Stop):
             # no change if already stopped
             return state
@@ -67,6 +68,18 @@ class AgentTransitionModel(pomdp_py.TransitionModel):
             return Stop(action.val)
         elif isinstance(action, Ask):
             return Go()
+
+    def sample(self, state, action):
+        return self.argmax(state, action)
+
+class CountdownTransitionModel(pomdp_py.TransitionModel):
+    def __init__(self, id):
+        super().__init__()
+        self.id = id
+
+    def argmax(self, product_state, action):
+        state = product_state.object_states[self.id]
+        return CountdownState(state.t-1)
 
     def sample(self, state, action):
         return self.argmax(state, action)

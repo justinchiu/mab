@@ -5,14 +5,15 @@ from copy import deepcopy
 
 import numpy as np
 import pomdp_py
+from pomdp_py.utils import TreeDebugger
 
 from agent.agent import RsAgent
 from domain.action import Ask
-from domain.state import ArmState, ProductState, Go, Stop
+from domain.state import ArmState, ProductState, Go, Stop, CountdownState
 from env.env import RsEnvironment
 
-DBG_OUTER = False
-DBG_UPDATE = False
+DBG_OUTER = True
+DBG_UPDATE = True
 
 
 class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
@@ -20,6 +21,7 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         self,
         num_dots,
         num_targets,
+        max_turns,
         belief_rep="histogram", prior=None,
         num_particles=100,
         num_bins = 5,
@@ -29,17 +31,19 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         self.target_dots = np.random.choice(num_dots, num_targets, replace=False)
         self.dot_vector = np.zeros(num_dots, dtype=np.bool_)
         self.dot_vector[self.target_dots] = True
+        self.max_turns = max_turns
 
         state = {
-            id+1: ArmState(
+            id: ArmState(
                 id, 1 - self.delta if is_good else self.delta,
                 shape = "large", color = "grey", xy = (1,1),
             ) for id, is_good in enumerate(self.dot_vector)
         }
-        state[0] = Go()
+        state[num_dots] = Go()
+        state[num_dots+1] = CountdownState(max_turns)
         init_true_state = ProductState(state)
 
-        agent = RsAgent(num_dots, belief_rep, prior, num_particles, num_bins)
+        agent = RsAgent(num_dots, max_turns, belief_rep, prior, num_particles, num_bins)
         env = RsEnvironment(num_dots, self.dot_vector, init_true_state)
         super().__init__(agent, env, "RankingAndSelectionPomdp")
 
@@ -47,7 +51,11 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
 # why is this here instead of in the particle filter?
 # seems like this is only run for UCT, maybe stick to POMCP in general then?
 ### Belief Update ###
-def belief_update(agent, real_action, real_observation, next_robot_state, planner):
+def belief_update(
+    agent, real_action, real_observation,
+    next_robot_state, next_countdown_state,
+    planner,
+):
     """Updates the agent's belief; The belief update may happen
     through planner update (e.g. when planner is POMCP)."""
     # Updates the planner; In case of POMCP, agent's belief is also updated.
@@ -71,8 +79,9 @@ def belief_update(agent, real_action, real_observation, next_robot_state, planne
                 if objid == agent.id:
                     # Assuming the agent can observe its own state:
                     new_belief = pomdp_py.Histogram({next_robot_state: 1.0})
-                #else:
-                elif isinstance(real_action, Ask) and objid == real_action.val+1:
+                elif objid == agent.countdown_id:
+                    new_belief = pomdp_py.Histogram({next_countdown_state: 1.0})
+                elif isinstance(real_action, Ask) and objid == real_action.val:
                     # This is doing
                     #    B(si') = normalizer * O(oi|si',sr',a) * sum_s T(si'|s,a)*B(si)
                     #
@@ -109,7 +118,7 @@ def belief_update(agent, real_action, real_observation, next_robot_state, planne
 ### This is the main online POMDP solver logic ###
 def solve(
     problem,
-    max_depth=3,  # planning horizon
+    max_depth=5,  # planning horizon
     discount_factor=0.99,
     #planning_time=5.,       # amount of time (s) to plan each step
     num_sims=10000,
@@ -158,6 +167,7 @@ def solve(
         print(problem.agent.cur_belief.object_beliefs[3].histogram)
         print(problem.agent.cur_belief.object_beliefs[4].histogram)
         print(problem.agent.cur_belief.object_beliefs[5].histogram)
+        print(problem.agent.cur_belief.object_beliefs[6].histogram)
     if DBG_OUTER:
         print("initial belief")
         print_belief()
@@ -184,9 +194,12 @@ def solve(
         # Updates
         problem.agent.clear_history()  # truncate history
         problem.agent.update_history(real_action, real_observation)
-        belief_update(problem.agent, real_action, real_observation,
-                      problem.env.state.object_states[0],
-                      planner)
+        belief_update(
+            problem.agent, real_action, real_observation,
+            problem.env.state.object_states[problem.agent.id],
+            problem.env.state.object_states[problem.agent.countdown_id],
+            planner,
+        )
         _time_used += time.time() - _start
 
 
@@ -242,8 +255,22 @@ def solve(
 if __name__ == "__main__":
     num_dots = 5
     num_targets = 2
-    problem = RankingAndSelectionProblem(num_dots, num_targets)
-    #problem = RankingAndSelectionProblem(num_dots, num_targets, belief_rep="particle")
+    max_turns = num_dots
+    # Test POUCT
+    problem = RankingAndSelectionProblem(num_dots, num_targets, max_turns)
+    planner = pomdp_py.POUCT(
+        max_depth=5,
+        discount_factor=1,
+        num_sims = 100000,
+        exploration_const=1000,
+        rollout_policy=problem.agent.policy_model)  # Random by default
+    action = planner.plan(problem.agent)
+    dd = TreeDebugger(problem.agent.tree)
+    import pdb; pdb.set_trace()
+    solve(problem, visualize=False)
+
+    # Test POMCP
+    problem = RankingAndSelectionProblem(num_dots, num_targets, belief_rep="particles")
     solve(problem, visualize=False)
 
 

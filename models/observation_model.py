@@ -9,7 +9,7 @@ class ObservationModel(pomdp_py.OOObservationModel):
     def __init__(self, num_dots):
         #observation_models = [ArmObservationModel(id) for id in range(num_dots)]
         observation_models = {
-            id+1: ArmObservationModel(id) for id in range(num_dots)
+            id: ArmObservationModel(id) for id in range(num_dots)
         }
         # no agent observation model
         super().__init__(observation_models)
@@ -24,7 +24,7 @@ class ArmObservationModel(pomdp_py.ObservationModel):
     """
     def __init__(self, id):
         # arm id
-        # in belief state and world state, objid = self.id + 1
+        # in belief state and world state, objid = self.id
         self.id = id
 
     def probability(self, observation, next_state, action, **kwargs):
@@ -45,7 +45,7 @@ class ArmObservationModel(pomdp_py.ObservationModel):
 
     def sample(self, next_state, action, **kwargs):
         if isinstance(action, Ask):
-            prob = next_state.object_states[self.id+1]["prob"]
+            prob = next_state.object_states[self.id]["prob"]
             # TODO: handle vector-valued action
             y = np.random.binomial(1, prob) if action.val == self.id else 0
             # return y if action[self.id], y ~ Bern(next_state.prob)

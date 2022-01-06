@@ -4,9 +4,17 @@ from domain.action import Ask, Select
 from domain.state import Go, Stop
 
 class RewardModel(pomdp_py.RewardModel):
+    def __init__(self, num_dots):
+        super().__init__()
+        self.robot_id = num_dots
+        self.countdown_id = num_dots + 1
+
     def _reward_func(self, state, action):
-        robot_state = state.object_states[0]
+        robot_state = state.object_states[self.robot_id]
+        countdown_state = state.object_states[self.countdown_id]
         if isinstance(robot_state, Stop):
+            return 0
+        elif countdown_state.t < 0:
             return 0
         elif isinstance(action, Ask):
             #return -action.val.sum()
@@ -15,8 +23,8 @@ class RewardModel(pomdp_py.RewardModel):
         elif isinstance(action, Select):
             #return state[action.val].prob
             # increment action.val by 1, since 0th state is the robot
-            #return state.object_states[action.val+1]["prob"]
-            if state.object_states[action.val+1]["prob"] > 0.5:
+            #return state.object_states[action.val]["prob"]
+            if state.object_states[action.val]["prob"] > 0.5:
                 return 10
             else:
                 return -100

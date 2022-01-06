@@ -3,7 +3,7 @@ import numpy as np
 
 import pomdp_py
 
-from domain.state import ArmState, ProductState, Go, Stop
+from domain.state import ArmState, ProductState, Go, Stop, CountdownState
 
 class ProductBelief(pomdp_py.OOBelief):
     def __init__(self, arm_beliefs):
@@ -17,7 +17,8 @@ class ProductBelief(pomdp_py.OOBelief):
 
 
 def initialize_belief(
-    num_dots, 
+    num_dots,
+    max_turns,
     prior,
     representation="histogram",
     num_particles=100,
@@ -34,14 +35,14 @@ def initialize_belief(
         GenerativeDistribution: the initial belief representation.
     """
     if representation == "histogram":
-        return _initialize_histogram_belief(num_dots, prior, num_bins=num_bins)
+        return _initialize_histogram_belief(num_dots, max_turns, prior, num_bins=num_bins)
     elif representation == "particles":
-        return _initialize_particles_belief(num_dots, prior, num_particles=num_particles)
+        return _initialize_particles_belief(num_dots, max_turns, prior, num_particles=num_particles)
     else:
         raise ValueError("Unsupported belief representation %s" % representation)
 
     
-def _initialize_histogram_belief(dim, prior, num_bins):
+def _initialize_histogram_belief(dim, max_turns, prior, num_bins):
     """
     Returns the belief distribution represented as a histogram
     """
@@ -50,7 +51,7 @@ def _initialize_histogram_belief(dim, prior, num_bins):
     oo_hists = {}  # objid -> Histogram
     # prior should be a tensor of shape num_dots (prob True)
     oo_hists = {
-        id+1: pomdp_py.Histogram({
+        id: pomdp_py.Histogram({
             ArmState(id, p, None, None, None): prob
             for p, prob in zip(np.linspace(.01, .99, num_bins), probs)
         })
@@ -62,14 +63,18 @@ def _initialize_histogram_belief(dim, prior, num_bins):
     }
     agent_states[Go()] = 1. - dim * .01
 
-    oo_hists[0] = pomdp_py.Histogram(agent_states)
+    counter_states = {
+        CountdownState(max_turns): 1
+    }
+    oo_hists[dim] = pomdp_py.Histogram(agent_states)
+    oo_hists[dim+1] = pomdp_py.Histogram(counter_states)
 
     # TODO: swap to numpy array, dict is super slow?
     return ProductBelief(oo_hists)
 
 
 def _initialize_particles_belief(
-    dim, prior, num_particles=100,
+    dim, max_turns, prior, num_particles=100,
 ):
     """This returns a single set of particles that represent the distribution over a
     joint state space of all objects.

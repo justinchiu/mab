@@ -10,5 +10,5 @@ class RsEnvironment(pomdp_py.Environment):
         self.dot_vector = dot_vector
 
         transition_model = ProductTransitionModel(num_dots)
-        reward_model = RewardModel()
+        reward_model = RewardModel(num_dots)
         super().__init__(init_state, transition_model, reward_model)
