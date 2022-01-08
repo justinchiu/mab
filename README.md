@@ -7,9 +7,9 @@ reward is only recieved at a terminal state and each action has some associated 
 
 Current status:
 * PO-UCT works relatively well for small scale problems, but is extremely sample inefficient.
+* POMCP seems to work better than PO-UCT, but is very slow.
 
 TODO:
-* Run particle-based POMCP
 * Exact inference
 * Permutation invariance
 * Feature-based POMDP
