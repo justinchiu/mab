@@ -16,7 +16,7 @@ class RewardModel(pomdp_py.RewardModel):
             # state transitions to Stop after selection has been made
             # always give 0 reward after selection has been made
             return 0
-        elif countdown_state.t < 0:
+        elif countdown_state.t <= 0:
             # penalize if the game finishes without selection,
             # ie robot_state != Stop
             return -100

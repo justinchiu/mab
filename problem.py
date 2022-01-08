@@ -1,3 +1,7 @@
+# Multi-Armed Bandit POMDP
+# pomdp-py implementation
+# based off of pomdp_py/pomdp_problems/multi_object_search
+
 import random
 import time
 
@@ -8,6 +12,7 @@ import pomdp_py
 from pomdp_py.utils import TreeDebugger
 
 from agent.agent import RsAgent
+from agent.belief import ProductBelief
 from domain.action import Ask
 from domain.state import ArmState, ProductState, Go, Stop, CountdownState
 from env.env import RsEnvironment
@@ -146,9 +151,11 @@ def solve(
     """
 
     #random_objid = random.sample(problem.env.target_objects, 1)[0]
-    random_objid = random.choice(range(problem.num_dots))
-    random_object_belief = problem.agent.belief.object_beliefs[random_objid]
-    if isinstance(random_object_belief, pomdp_py.Histogram):
+    #random_objid = random.choice(range(problem.num_dots))
+    #random_object_belief = problem.agent.belief.object_beliefs[random_objid]
+    belief = problem.agent.belief
+    if isinstance(belief, ProductBelief):
+        # HISTOGRAM
         # Use POUCT
         planner = pomdp_py.POUCT(max_depth=max_depth,
                                  discount_factor=discount_factor,
@@ -156,7 +163,7 @@ def solve(
                                  num_sims = num_sims,
                                  exploration_const=exploration_const,
                                  rollout_policy=problem.agent.policy_model)  # Random by default
-    elif isinstance(random_object_belief, pomdp_py.Particles):
+    elif isinstance(belief, pomdp_py.Particles):
         # Use POMCP
         planner = pomdp_py.POMCP(max_depth=max_depth,
                                  discount_factor=discount_factor,
@@ -265,30 +272,46 @@ if __name__ == "__main__":
     num_dots = 5
     num_targets = 2
     max_turns = num_dots
-    # Test POUCT
-    problem = RankingAndSelectionProblem(
-        num_dots, num_targets, max_turns,
-        num_bins=3,
-        belief_rep="histogram",
-    )
-    #"""
-    planner = pomdp_py.POUCT(
-        max_depth=5,
-        discount_factor=1,
-        num_sims = 20000,
-        exploration_const=100,
-        rollout_policy=problem.agent.policy_model)  # Random by default
-    action = planner.plan(problem.agent)
-    dd = TreeDebugger(problem.agent.tree)
-    # Observation: needs an extremely large number of simulations if symmetry
-    # is not taken advantage of.
-    # Is POMCP better?
-    #"""
-    solve(problem, visualize=False, num_sims=50000)
-    import sys; sys.exit()
 
-    # Test POMCP
-    problem = RankingAndSelectionProblem(num_dots, num_targets, max_turns, belief_rep="particles")
-    solve(problem, visualize=False)
+    TEST_POUCT = False
+    if TEST_POUCT:
+        # Test POUCT
+        problem = RankingAndSelectionProblem(
+            num_dots, num_targets, max_turns,
+            num_bins=3,
+            belief_rep="histogram",
+        )
+        """
+        planner = pomdp_py.POUCT(
+            max_depth=5,
+            discount_factor=1,
+            num_sims = 20000,
+            exploration_const=100,
+            rollout_policy=problem.agent.policy_model)  # Random by default
+        action = planner.plan(problem.agent)
+        dd = TreeDebugger(problem.agent.tree)
+        # Observation: needs an extremely large number of simulations if symmetry
+        # is not taken advantage of.
+        # Is POMCP better?
+        """
+        solve(problem, visualize=False, num_sims=50000)
 
-
+    TEST_POMCP = True
+    if TEST_POMCP:
+        # Test POMCP
+        problem = RankingAndSelectionProblem(
+            num_dots, num_targets, max_turns,
+            belief_rep = "particles",
+            num_bins = 5,
+            num_particles = 1000,
+        )
+        planner = pomdp_py.POMCP(
+            max_depth=5,
+            discount_factor=1,
+            num_sims = 20000,
+            exploration_const=100,
+            rollout_policy=problem.agent.policy_model)  # Random by default
+        action = planner.plan(problem.agent)
+        dd = TreeDebugger(problem.agent.tree)
+        #import pdb; pdb.set_trace()
+        solve(problem, visualize=False, num_sims = 50000)

@@ -35,9 +35,15 @@ def initialize_belief(
         GenerativeDistribution: the initial belief representation.
     """
     if representation == "histogram":
-        return _initialize_histogram_belief(num_dots, max_turns, prior, num_bins=num_bins)
+        return _initialize_histogram_belief(
+            num_dots, max_turns, prior, num_bins=num_bins,
+        )
     elif representation == "particles":
-        return _initialize_particles_belief(num_dots, max_turns, prior, num_particles=num_particles)
+        return _initialize_particles_belief(
+            num_dots, max_turns, prior,
+            num_particles = num_particles,
+            num_bins = num_bins,
+        )
     else:
         raise ValueError("Unsupported belief representation %s" % representation)
 
@@ -73,8 +79,25 @@ def _initialize_histogram_belief(dim, max_turns, prior, num_bins):
     return ProductBelief(oo_hists)
 
 
+def sample_state(prior, dim, max_turns, robot_id, countdown_id):
+    product_state = {}
+    for id in range(dim):
+        # sample an arm state
+        dist = prior[id]
+        prob = np.random.choice(dist)
+        product_state[id] = ArmState(
+            id, prob,
+            shape= "large", color = "grey", xy = (1,1),
+        )
+    product_state[robot_id] = Go()
+    product_state[countdown_id] = CountdownState(max_turns)
+    return ProductState(product_state)
+
+
 def _initialize_particles_belief(
-    dim, max_turns, prior, num_particles=100,
+    dim, max_turns, prior = None,
+    num_particles = 100,
+    num_bins = 5,
 ):
     """This returns a single set of particles that represent the distribution over a
     joint state space of all objects.
@@ -85,43 +108,15 @@ def _initialize_particles_belief(
     as if object_oriented=True. Then, `num_particles` number of particles with
     joint state is sampled randomly from these particle beliefs.
     """
-    # For the robot, we assume it can observe its own state;
-    # Its pose must have been provided in the `prior`.
-    raise NotImplementedError
+    # prior: Dict(arm_id -> List[probability of success])
 
-    assert robot_id in prior, "Missing initial robot pose in prior."
-    init_robot_pose = list(prior[robot_id].keys())[0]
-    
-    oo_particles = {}  # objid -> Particageles
-    width, length = dim
-    for objid in object_ids:
-        particles = [RobotState(robot_id, init_robot_pose, (), None)]  # list of states; Starting the observable robot state.
-        if objid in prior:
-            # prior knowledge provided. Just use the prior knowledge
-            prior_sum = sum(prior[objid][pose] for pose in prior[objid])
-            for pose in prior[objid]:
-                state = ObjectState(objid, "target", pose)
-                amount_to_add = (prior[objid][pose] / prior_sum) * num_particles
-                for _ in range(amount_to_add):
-                    particles.append(state)
-        else:
-            # no prior knowledge. So uniformly sample `num_particles` number of states.
-            for _ in range(num_particles):
-                x = random.randrange(0, width)
-                y = random.randrange(0, length)
-                state = ObjectState(objid, "target", (x,y))
-                particles.append(state)
+    if prior is None:
+        # uniform over discretization
+        prior = {id: np.linspace(.01, .99, num_bins) for id in range(dim)}
+        # alternative: sample from uniform / beta distribution
 
-        particles_belief = pomdp_py.Particles(particles)
-        oo_particles[objid] = particles_belief
-        
-    # Return Particles distribution which contains particles
-    # that represent joint object states
-    particles = []
-    for _ in range(num_particles):
-        object_states = {}
-        for objid in oo_particles:
-            random_particle = random.sample(oo_particles[objid], 1)[0]
-            object_states[_id] = copy.deepcopy(random_particle)
-        particles.append(ProductState(object_states))
+    particles = [
+        sample_state(prior, dim, max_turns, dim, dim+1)
+        for _ in range(num_particles)
+    ]
     return pomdp_py.Particles(particles)
