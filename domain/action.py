@@ -38,4 +38,4 @@ class Select(Action):
 
 class Pass(Action):
     def __init__(self):
-        super().__init__("select", 0)
+        super().__init__("pass", -1)

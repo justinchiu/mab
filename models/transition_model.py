@@ -3,7 +3,7 @@
 import copy
 import pomdp_py
 
-from domain.action import Ask, Select
+from domain.action import Ask, Select, Pass
 from domain.state import Go, Stop, CountdownState, ProductState
 
 class ProductTransitionModel(pomdp_py.OOTransitionModel):
@@ -67,6 +67,10 @@ class AgentTransitionModel(pomdp_py.TransitionModel):
         elif isinstance(action, Select):
             return Stop(action.val)
         elif isinstance(action, Ask):
+            return Go()
+        elif isinstance(action, Pass):
+            # Pass is used as the first move of player 2
+            # so they may incorporate the observation from player 1
             return Go()
 
     def sample(self, state, action):

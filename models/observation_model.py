@@ -2,7 +2,7 @@
 import numpy as np
 import pomdp_py
 
-from domain.action import Ask, Select
+from domain.action import Ask, Select, Pass
 from domain.observation import ArmObservation, ProductObservation
 
 class ObservationModel(pomdp_py.OOObservationModel):
@@ -40,6 +40,8 @@ class ArmObservationModel(pomdp_py.ObservationModel):
             return prob if observation.feedback else 1 - prob
         elif isinstance(action, Select):
             return 0.01 if observation.feedback else 0.99
+        elif isinstance(action, Pass):
+            return 0.01 if observation.feedback else 0.99
         else:
             return ValueError(f"Invalid action: {action}")
 
@@ -52,6 +54,8 @@ class ArmObservationModel(pomdp_py.ObservationModel):
             # return y if action[self.id], y ~ Bern(next_state.prob)
             return ArmObservation(self.id, y)
         elif isinstance(action, Select):
+            return ArmObservation(self.id, 0)
+        elif isinstance(action, Pass):
             return ArmObservation(self.id, 0)
         else:
             raise ValueError(f"Invalid action: {action}")

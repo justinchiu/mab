@@ -2,7 +2,7 @@ import numpy as np
 import pomdp_py
 
 from problem import RankingAndSelectionProblem, initialize_dots, belief_update
-from domain.action import Ask, Select
+from domain.action import Ask, Select, Pass
 from domain.observation import ProductObservation
 
 
@@ -49,7 +49,17 @@ def observe_B(action_A, attrs_A, attrs_B):
         feedback[i] = present and attr in attrs_B
     return feedback
 
+def map_obs(action_A, attrs_A, attrs_B):
+    if not isinstance(action_A, Ask):
+        return False
+    # whether player B can see anything with the attributes of player A's ask
+    observation = np.zeros_like(action_A.val)
+    for i, attr in enumerate(attrs_B):
+        if attr in attrs_A:
+            observation[i] = action_A.val[attrs_A.index(attr)]
+    return observation
 
+action_B = Pass()
 for turn in range(max_turns):
     # player A goes first
     action_A = plan(planner, problems[0], steps_left = max_turns - turn)
@@ -61,16 +71,27 @@ for turn in range(max_turns):
     # player B observes action_A and just responds (for now)
     response_from_B = observe_B(action_A, attrs_A, attrs_B)
     observation_for_A = ProductObservation({
-        id: 1 if action_A.val[id] and response_A else 0
+        id: 1 if action_A.val[id] and response_from_B[id] else 0
     for id in range(num_dots)})
     # double check response
     real_observation = problems[0].env.provide_observation(
         problems[0].agent.observation_model, action_A)
 
+    # player B observes player A's action
+    observation_for_B_vec = map_obs(action_A, attrs_A, attrs_B)
+    observation_for_B = ProductObservation({
+        id: 1 if observation_for_B_vec[id] else 0
+    for id in range(num_dots)})
+    if observation_for_B_vec.sum() > 0:
+        # only update belief if gained information
+        belief_update(
+            problems[1].agent, action_B, observation_for_B,
+            robot state, countdown_state,
+            planner,
+        )
+    import pdb; pdb.set_trace()
+
     # player B can also send more information
-    if turn > 0:
-        # observe A's action
-        raise NotImplementedError
     action_B = plan(planner, problems[1], steps_left = max_turns - turn)
     reward_B = problems[1].env.state_transition(action_B, execute=True)
 
