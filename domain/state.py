@@ -6,14 +6,10 @@ class ArmState(pomdp_py.ObjectState):
         self,
         id: int,
         prob: float,
-        shape: str, color: str, xy: tuple[float, float],
+        shape: str = "large",
+        color: str = "black",
+        xy: tuple[float, float] = (0,0),
     ):
-
-        super().__init__("arm", {
-            "id": id,
-            "prob": prob,
-        })
-        """
         super().__init__("arm", {
             "id": id,
             "prob": prob,
@@ -21,7 +17,6 @@ class ArmState(pomdp_py.ObjectState):
             "color": color,
             "xy": xy,
         })
-        """
 
     def __str__(self):
         return f"Dot {self.attributes['id']} ({self.attributes['prob']:.2f})"

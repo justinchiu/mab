@@ -1,3 +1,4 @@
+import numpy as np
 import pomdp_py
 
 from domain.action import Action, Ask, Select, Pass
@@ -10,7 +11,12 @@ class PolicyModel(pomdp_py.RandomRollout):
         super().__init__()
         self.num_dots = num_dots
         self.SELECT = [Select(id) for id in range(num_dots)]
-        self.ASK = [Ask(id) for id in range(num_dots)]
+        #self.ASK = [Ask([id]) for id in range(num_dots)]
+        # ASK = all binary vectors of size num_dots
+        #self.ASK = [Ask(id) for id in range(num_dots)]
+        self.ASK = [Ask(np.array([
+            x == id for x in range(num_dots)
+        ], dtype=bool)) for id in range(num_dots)]
         self.ACTIONS = self.SELECT + self.ASK
 
     def sample(self, state, **kwargs):

@@ -47,7 +47,8 @@ class ArmObservationModel(pomdp_py.ObservationModel):
         if isinstance(action, Ask):
             prob = next_state.object_states[self.id]["prob"]
             # TODO: handle vector-valued action
-            y = np.random.binomial(1, prob) if action.val == self.id else 0
+            #y = np.random.binomial(1, prob) if action.val == self.id else 0
+            y = np.random.binomial(1, prob) if action.val[self.id] else 0
             # return y if action[self.id], y ~ Bern(next_state.prob)
             return ArmObservation(self.id, y)
         elif isinstance(action, Select):

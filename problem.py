@@ -6,6 +6,7 @@ import random
 import time
 
 from copy import deepcopy
+from itertools import product
 
 import numpy as np
 import pomdp_py
@@ -21,23 +22,42 @@ DBG_OUTER = False
 DBG_UPDATE = False
 
 
+def initialize_dots(total_dots=9, num_dots=7, num_targets=4):
+    # attributes
+    color = ["black", "grey", "white"]
+    size = ["large", "medium", "small"]
+    attributes = list(product(color, size))
+
+    all_dot_vector = np.zeros(total_dots, dtype=np.bool_)
+    diff = total_dots - num_dots
+
+    target_dots = np.random.choice(
+        num_dots - diff, num_targets, replace=False)
+
+    all_dot_vector[target_dots + diff] = True
+
+    dot_vector_A = all_dot_vector[:num_dots]
+    dot_vector_B = all_dot_vector[-num_dots:]
+    attributes_A = attributes[:num_dots]
+    attributes_B = attributes[-num_dots:]
+    return dot_vector_A, dot_vector_B, attributes_A, attributes_B
+
+
 class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
     def __init__(
         self,
-        num_dots,
-        num_targets,
+        dot_vector,
         max_turns,
         belief_rep="histogram", prior=None,
         num_particles=100,
         num_bins = 5,
     ):
         self.delta = 0.01
+        self.dot_vector = dot_vector
+        num_dots = dot_vector.shape[0]
+        num_targets = dot_vector.sum()
         self.num_dots = num_dots
         self.num_targets = num_targets
-        self.max_turns = max_turns
-
-        # sets up self.target_dots and self.dot_vector
-        self.initialize_dots()
 
         state = {
             id: ArmState(
@@ -53,13 +73,6 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         env = RsEnvironment(num_dots, self.dot_vector, init_true_state)
         super().__init__(agent, env, "RankingAndSelectionPomdp")
 
-    def initialize_dots(self):
-        """ sets up self.target_dots and self.dot_vector
-            call to randomly re-initialize problem
-        """
-        self.target_dots = np.random.choice(self.num_dots, self.num_targets, replace=False)
-        self.dot_vector = np.zeros(self.num_dots, dtype=np.bool_)
-        self.dot_vector[self.target_dots] = True
 
 ### Belief Update
 # why is this here instead of in the particle filter?
@@ -95,7 +108,7 @@ def belief_update(
                     new_belief = pomdp_py.Histogram({next_robot_state: 1.0})
                 elif objid == agent.countdown_id:
                     new_belief = pomdp_py.Histogram({next_countdown_state: 1.0})
-                elif isinstance(real_action, Ask) and objid == real_action.val:
+                elif isinstance(real_action, Ask) and real_action.val[objid]:
                     # This is doing
                     #    B(si') = normalizer * O(oi|si',sr',a) * sum_s T(si'|s,a)*B(si)
                     #
@@ -204,10 +217,12 @@ def solve(
 
         # Receive observation
         _start = time.time()
-        real_observation = \
-            problem.env.provide_observation(problem.agent.observation_model, real_action)
+        real_observation = problem.env.provide_observation(
+            problem.agent.observation_model, real_action)
 
         # Updates
+        # no need to truncate history here though
+        # (used for POUCT)
         problem.agent.clear_history()  # truncate history
         problem.agent.update_history(real_action, real_observation)
         belief_update(
@@ -237,24 +252,6 @@ def solve(
             print_belief()
             import pdb; pdb.set_trace()
 
-        if visualize:
-            raise NotImplementedError
-            # This is used to show the sensing range; Not sampled
-            # according to observation model.
-            robot_pose = problem.env.state.object_states[robot_id].pose
-            viz_observation = MosOOObservation({})
-            if isinstance(real_action, LookAction) or isinstance(real_action, FindAction):
-                viz_observation = \
-                    problem.env.sensors[robot_id].observe(robot_pose,
-                                                          problem.env.state)
-            viz.update(robot_id,
-                       real_action,
-                       real_observation,
-                       viz_observation,
-                       problem.agent.cur_belief)
-            viz.on_loop()
-            viz.on_render()
-
         # Termination check
         agent_state = problem.env.state.object_states[problem.agent.id]
         stopped = isinstance(agent_state, Stop)
@@ -269,15 +266,17 @@ def solve(
             break
 
 if __name__ == "__main__":
+    total_dots = 7
     num_dots = 5
     num_targets = 2
     max_turns = num_dots
+    dot_vector, _, _, _ = initialize_dots(total_dots, num_dots, num_targets)
 
     TEST_POUCT = False
     if TEST_POUCT:
         # Test POUCT
         problem = RankingAndSelectionProblem(
-            num_dots, num_targets, max_turns,
+            dot_vector, max_turns,
             num_bins=3,
             belief_rep="histogram",
         )
@@ -300,7 +299,7 @@ if __name__ == "__main__":
     if TEST_POMCP:
         # Test POMCP
         problem = RankingAndSelectionProblem(
-            num_dots, num_targets, max_turns,
+            dot_vector, max_turns,
             belief_rep = "particles",
             num_bins = 5,
             num_particles = 1000,

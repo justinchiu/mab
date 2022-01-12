@@ -41,3 +41,6 @@ class RsAgent(pomdp_py.Agent):
 
     def clear_history(self):
         self._history = None
+
+    def read(self, message):
+        asdf

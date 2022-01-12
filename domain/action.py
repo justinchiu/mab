@@ -7,7 +7,7 @@ class Action(pomdp_py.Action):
         self.name = name
         self.val = val
     def __hash__(self):
-        return hash(self.name)
+        return hash(self.name + str(self.val))
     def __eq__(self, other):
         if isinstance(other, Action):
             return self.name == other.name and self.val == other.val
@@ -21,6 +21,16 @@ class Action(pomdp_py.Action):
 class Ask(Action):
     def __init__(self, ids):
         super().__init__("ask", ids)
+
+    def __hash__(self):
+        return hash(self.name + str(self.val))
+    def __eq__(self, other):
+        if isinstance(other, Ask):
+            return self.name == other.name and (self.val == other.val).all()
+        elif type(other) == str:
+            return self.name == other and (self.val == other.val).all()
+        else:
+            return False
 
 class Select(Action):
     def __init__(self, id):
