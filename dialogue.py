@@ -86,7 +86,7 @@ for turn in range(max_turns):
         # only update belief if gained information
         belief_update(
             problems[1].agent, action_B, observation_for_B,
-            robot state, countdown_state,
+            robot_state, countdown_state,
             planner,
         )
     import pdb; pdb.set_trace()
