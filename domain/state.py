@@ -1,4 +1,6 @@
 
+from typing import Tuple
+
 import pomdp_py
 
 class ArmState(pomdp_py.ObjectState):
@@ -8,7 +10,7 @@ class ArmState(pomdp_py.ObjectState):
         prob: float,
         shape: str = "large",
         color: str = "black",
-        xy: tuple[float, float] = (0,0),
+        xy: Tuple[float, float] = (0,0),
     ):
         super().__init__("arm", {
             "id": id,

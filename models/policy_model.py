@@ -26,7 +26,9 @@ class PolicyModel(pomdp_py.RandomRollout):
         return self.get_all_actions().random()
 
     def get_all_actions(self, state=None, history=None):
-        import pdb; pdb.set_trace()
+        if state.object_states[self.num_dots+1].t == self.max_turns:
+            # first turn, allow Pass
+            return self.ACTIONS + self.PASS
         return self.ACTIONS
         """
         robot_state = state.object_states[0]

@@ -1,6 +1,6 @@
 import pomdp_py
 
-from domain.action import Ask, Select
+from domain.action import Ask, Select, Pass
 from domain.state import Go, Stop
 
 class RewardModel(pomdp_py.RewardModel):
@@ -20,7 +20,7 @@ class RewardModel(pomdp_py.RewardModel):
             # penalize if the game finishes without selection,
             # ie robot_state != Stop
             return -100
-        elif isinstance(action, Ask):
+        elif isinstance(action, Ask) or isinstance(action, Pass):
             #return -action.val.sum()
             #return -.1
             return -1
@@ -32,6 +32,8 @@ class RewardModel(pomdp_py.RewardModel):
                 return 10
             else:
                 return -100
+        else:
+            raise ValueError(f"Invalid action: {action}")
 
 
     def sample(self, state, action, next_state):

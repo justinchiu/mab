@@ -84,12 +84,14 @@ for turn in range(max_turns):
     for id in range(num_dots)})
     if observation_for_B_vec.sum() > 0:
         # only update belief if gained information
+        # call plan to initialize tree for player B
+        _ = plan(planner, problems[1], steps_left = max_turns - turn)
+        action_B0 = Ask(obseration_for_B)
         belief_update(
-            problems[1].agent, action_B, observation_for_B,
+            problems[1].agent, action_B0, observation_for_B,
             robot_state, countdown_state,
             planner,
         )
-    import pdb; pdb.set_trace()
 
     # player B can also send more information
     action_B = plan(planner, problems[1], steps_left = max_turns - turn)
