@@ -40,7 +40,7 @@ def plan(planner, problem, steps_left):
 
 # communicate by passing boolean functions that apply to the dot you mention
 
-def observe_B(action_A, attrs_A, attrs_B):
+def observe(action_A, attrs_A, attrs_B):
     if not isinstance(action_A, Ask):
         return False
     # whether player B can see anything with the attributes of player A's ask
@@ -59,17 +59,63 @@ def map_obs(action_A, attrs_A, attrs_B):
             observation[i] = action_A.val[attrs_A.index(attr)]
     return observation
 
+"""
+On the first turn, player A and B must initialize their belief trees.
+Turns then proceed following
+
+Player A                    Player B
+Respond (player B first action = Pass)
+Update belief
+Plan
+Ask
+combine response + ask
+                            Respond
+                            Update belief if Asked about present dot
+                            Plan
+                            Ask
+                            combine response + ask
+"""
+
+# initialize trees
+
 action_B = Pass()
 for turn in range(max_turns):
     # player A goes first
+    if isinstance(action_B, Ask):
+        # Respond if asked
+        response_from_A = observe(action_B, attrs_B, attrs_A)
+        observation_for_B = ProductObservation({
+            id: 1 if action_B.val[id] and response_from_A[id] else 0
+        for id in range(num_dots)})
+
+        # convert Ask from B to an Observation for A
+        observation_for_A_vec = map_obs(action_B, attrs_B, attrs_A)
+        observation_for_A = ProductObservation({
+            id: 1 if observation_for_B_vec[id] else 0
+        for id in range(num_dots)})
+
+        if observation_for_B_vec.sum() > 0:
+            # only update belief if gained information
+            # call plan to initialize tree for player B
+            _ = plan(planner, problems[1], steps_left = max_turns - turn)
+            action_B0 = Ask(obseration_for_B)
+            belief_update(
+                problems[1].agent, Pass(), observation_for_B,
+                robot_state, countdown_state,
+                planner,
+            )
+
+    # Plan and ask
     action_A = plan(planner, problems[0], steps_left = max_turns - turn)
     reward_A = problems[0].env.state_transition(action_A, execute=True)
 
     print(f"Turn {turn}")
+    if isinstance(action_B, Ask):
+        print(f"Response A: {response_from_A}")
     print(f"Action A: {action_A}")
 
     # player B observes action_A and just responds (for now)
-    response_from_B = observe_B(action_A, attrs_A, attrs_B)
+    response_from_B = observe(action_A, attrs_A, attrs_B)
     observation_for_A = ProductObservation({
         id: 1 if action_A.val[id] and response_from_B[id] else 0
     for id in range(num_dots)})
