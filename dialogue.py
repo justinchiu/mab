@@ -14,6 +14,10 @@ num_dots = 5
 num_targets = 2
 
 dots_A, dots_B, attrs_A, attrs_B  = initialize_dots(total_dots, num_dots, num_targets)
+print("dots A")
+print(dots_A)
+print("dots B")
+print(dots_B)
 
 problems = [RankingAndSelectionProblem(
     dots,
@@ -26,8 +30,8 @@ problems = [RankingAndSelectionProblem(
 planner = pomdp_py.POMCP(
     max_depth = max_turns, # need to change
     discount_factor = 1,
-    num_sims = 20000,
-    exploration_const = 100,
+    num_sims = 1000,
+    exploration_const = 200,
     #rollout_policy = problems[0].agent.policy_model, # need to change per agent?
 )
 
@@ -82,7 +86,7 @@ action_B = Pass()
 for turn in range(max_turns):
     # player A goes first
     if isinstance(action_B, Ask):
-        # Respond if asked
+        # Respond if asked, only after first turn
         response_from_A = observe(action_B, attrs_B, attrs_A)
         observation_for_B = ProductObservation({
             id: 1 if action_B.val[id] and response_from_A[id] else 0
@@ -91,10 +95,10 @@ for turn in range(max_turns):
         # convert Ask from B to an Observation for A
         observation_for_A_vec = map_obs(action_B, attrs_B, attrs_A)
         observation_for_A = ProductObservation({
-            id: 1 if observation_for_B_vec[id] else 0
+            id: 1 if observation_for_A_vec[id] else 0
         for id in range(num_dots)})
 
-        if observation_for_B_vec.sum() > 0:
+        if observation_for_A_vec.sum() > 0:
             # only update belief if gained information
             # call plan to initialize tree for player B
             _ = plan(planner, problems[1], steps_left = max_turns - turn)
@@ -114,30 +118,33 @@ for turn in range(max_turns):
         print(f"Response A: {response_from_A}")
     print(f"Action A: {action_A}")
 
-    # player B observes action_A and just responds (for now)
-    response_from_B = observe(action_A, attrs_A, attrs_B)
-    observation_for_A = ProductObservation({
-        id: 1 if action_A.val[id] and response_from_B[id] else 0
-    for id in range(num_dots)})
-    # double check response
-    real_observation = problems[0].env.provide_observation(
-        problems[0].agent.observation_model, action_A)
+    if isinstance(action_A, Ask):
+        # player B observes action_A and just responds (for now)
+        response_from_B = observe(action_A, attrs_A, attrs_B)
+        observation_for_A = ProductObservation({
+            id: 1 if action_A.val[id] and response_from_B[id] else 0
+        for id in range(num_dots)})
+        # double check response
+        real_observation = problems[0].env.provide_observation(
+            problems[0].agent.observation_model, action_A)
 
-    # player B observes player A's action
-    observation_for_B_vec = map_obs(action_A, attrs_A, attrs_B)
-    observation_for_B = ProductObservation({
-        id: 1 if observation_for_B_vec[id] else 0
-    for id in range(num_dots)})
-    if observation_for_B_vec.sum() > 0:
-        # only update belief if gained information
-        # call plan to initialize tree for player B
-        _ = plan(planner, problems[1], steps_left = max_turns - turn)
-        action_B0 = Ask(obseration_for_B)
-        belief_update(
-            problems[1].agent, action_B0, observation_for_B,
-            robot_state, countdown_state,
-            planner,
-        )
+        # convert Ask from A to Observation for B
+        observation_for_B_vec = map_obs(action_A, attrs_A, attrs_B)
+        observation_for_B = ProductObservation({
+            id: 1 if observation_for_B_vec[id] else 0
+        for id in range(num_dots)})
+        if observation_for_B_vec.sum() > 0:
+            # only update belief if gained information
+            # call plan to initialize tree for player B
+            _ = plan(planner, problems[1], steps_left = max_turns - turn)
+            action_B0 = Ask(observation_for_B)
+            belief_update(
+                problems[1].agent, action_B0, observation_for_B,
+                robot_state, countdown_state,
+                planner,
+            )
+    elif isinstance(action_A, Select):
+        pass
 
     # player B can also send more information
     action_B = plan(planner, problems[1], steps_left = max_turns - turn)
