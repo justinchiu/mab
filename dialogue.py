@@ -80,7 +80,10 @@ combine response + ask
                             combine response + ask
 """
 
-# initialize trees
+# initialize trees for both agents
+# not sure this is necessary
+_ = plan(planner, problems[0], steps_left = max_turns)
+_ = plan(planner, problems[1], steps_left = max_turns)
 
 action_B = Pass()
 for turn in range(max_turns):
@@ -88,7 +91,7 @@ for turn in range(max_turns):
     if isinstance(action_B, Ask):
         # Respond if asked, only after first turn
         response_from_A = observe(action_B, attrs_B, attrs_A)
-        observation_for_B = ProductObservation({
+        response_to_B = ProductObservation({
             id: 1 if action_B.val[id] and response_from_A[id] else 0
         for id in range(num_dots)})
 
@@ -99,15 +102,15 @@ for turn in range(max_turns):
         for id in range(num_dots)})
 
         if observation_for_A_vec.sum() > 0:
-            # only update belief if gained information
-            # call plan to initialize tree for player B
-            _ = plan(planner, problems[1], steps_left = max_turns - turn)
-            action_B0 = Ask(obseration_for_B)
+            action_B0 = Ask(obseration_for_A)
             belief_update(
-                problems[1].agent, Pass(), observation_for_B,
+                problems[0].agent, Pass(), observation_for_A,
                 robot_state, countdown_state,
                 planner,
             )
+    elif isinstance(action_B, Select):
+        # must select
+        pass
 
     # Plan and ask
     action_A = plan(planner, problems[0], steps_left = max_turns - turn)
@@ -144,13 +147,16 @@ for turn in range(max_turns):
                 planner,
             )
     elif isinstance(action_A, Select):
+        # must select
         pass
 
     # player B can also send more information
     action_B = plan(planner, problems[1], steps_left = max_turns - turn)
     reward_B = problems[1].env.state_transition(action_B, execute=True)
 
-    # observation for A should be both response + action_B
+    if isinstance(action_A, Ask):
+        print(f"Response B: {response_from_B}")
+    print(f"Action B: {action_B}")
 
     import pdb; pdb.set_trace()
 

@@ -43,6 +43,10 @@ class Stop(AgentState):
     def __str__(self):
         return f"Agent ({self.state}: {self.id})"
 
+class Select(AgentState):
+    def __init__(self):
+        super().__init__("select")
+
 class CountdownState(pomdp_py.ObjectState):
     def __init__(self, T):
         super().__init__("counter", {"counter": T})
