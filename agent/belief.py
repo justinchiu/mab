@@ -1,4 +1,5 @@
 
+from itertools import product
 import numpy as np
 
 import pomdp_py
@@ -23,6 +24,7 @@ def initialize_belief(
     representation="histogram",
     num_particles=100,
     num_bins=10,
+    enumerate=False,
 ):
     """
     Returns a GenerativeDistribution that is the belief representation for
@@ -39,11 +41,18 @@ def initialize_belief(
             num_dots, max_turns, prior, num_bins=num_bins,
         )
     elif representation == "particles":
-        return _initialize_particles_belief(
-            num_dots, max_turns, prior,
-            num_particles = num_particles,
-            num_bins = num_bins,
-        )
+        if not enumerate:
+            return _initialize_particles_belief(
+                num_dots, max_turns, prior,
+                num_particles = num_particles,
+                num_bins = num_bins,
+            )
+        else:
+            return _initialize_particles_belief_enumerate(
+                num_dots, max_turns, prior,
+                num_particles = num_particles,
+                num_bins = num_bins,
+            )
     else:
         raise ValueError("Unsupported belief representation %s" % representation)
 
@@ -119,4 +128,48 @@ def _initialize_particles_belief(
         sample_state(prior, dim, max_turns, dim, dim+1)
         for _ in range(num_particles)
     ]
+    return pomdp_py.Particles(particles)
+
+
+def convert_state(state, dim, max_turns, robot_id, countdown_id):
+    product_state = {}
+    for id in range(dim):
+        # sample an arm state
+        prob = state[id]
+        product_state[id] = ArmState(
+            id, prob,
+            shape= "large", color = "grey", xy = (1,1),
+        )
+    product_state[robot_id] = Go()
+    product_state[countdown_id] = CountdownState(max_turns)
+    return ProductState(product_state)
+
+def _initialize_particles_belief_enumerate(
+    dim, max_turns, prior = None,
+    num_particles = 100,
+    num_bins = 5,
+):
+    """This returns a single set of particles that represent the distribution over a
+    joint state space of all objects.
+    Since it is very difficult to provide a prior knowledge over the joint state
+    space when the number of objects scales, the prior (which is
+    object-oriented), is used to create particles separately for each object to
+    satisfy the prior; That is, particles beliefs are generated for each object
+    as if object_oriented=True. Then, `num_particles` number of particles with
+    joint state is sampled randomly from these particle beliefs.
+    """
+    # prior: Dict(arm_id -> List[probability of success])
+
+    if prior is None:
+        # uniform over discretization
+        prior = {id: np.linspace(.01, .99, num_bins) for id in range(dim)}
+        # alternative: sample from uniform / beta distribution
+         
+    states = product(*(x.tolist() for x in prior.values()))
+
+    particles = [
+        convert_state(state, dim, max_turns, dim, dim+1)
+        for state in states
+    ]
+
     return pomdp_py.Particles(particles)

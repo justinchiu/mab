@@ -16,6 +16,7 @@ class RsAgent(pomdp_py.Agent):
         prior,
         num_particles=100,
         num_bins = 5,
+        enumerate = False,
     ):
         self.id = num_dots
         self.countdown_id = num_dots + 1
@@ -26,6 +27,7 @@ class RsAgent(pomdp_py.Agent):
             belief_rep,
             num_particles,
             num_bins,
+            enumerate,
         )
         policy_model = PolicyModel(num_dots)
         transition_model = ProductTransitionModel(num_dots)

@@ -26,6 +26,9 @@ class PolicyModel(pomdp_py.RandomRollout):
         return self.get_all_actions().random()
 
     def get_all_actions(self, state=None, history=None):
+        # for debugging, just allow PASS always
+        return self.ACTIONS + self.PASS
+
         if state.object_states[self.num_dots+1].t == self.max_turns:
             # first turn, allow Pass
             return self.ACTIONS + self.PASS

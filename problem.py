@@ -26,7 +26,7 @@ def initialize_dots(total_dots=9, num_dots=7, num_targets=4):
     # attributes
     color = ["black", "grey", "white"]
     size = ["large", "medium", "small"]
-    attributes = list(product(color, size))
+    attributes = list(product(color, size))[:total_dots]
 
     all_dot_vector = np.zeros(total_dots, dtype=np.bool_)
     diff = total_dots - num_dots
@@ -51,6 +51,7 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         belief_rep="histogram", prior=None,
         num_particles=100,
         num_bins = 5,
+        enumerate_belief = False,
     ):
         self.delta = 0.01
         self.dot_vector = dot_vector
@@ -69,7 +70,10 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         state[num_dots+1] = CountdownState(max_turns)
         init_true_state = ProductState(state)
 
-        agent = RsAgent(num_dots, max_turns, belief_rep, prior, num_particles, num_bins)
+        agent = RsAgent(
+            num_dots, max_turns, belief_rep, prior, num_particles, num_bins,
+            enumerate_belief,
+        )
         env = RsEnvironment(num_dots, self.dot_vector, init_true_state)
         super().__init__(agent, env, "RankingAndSelectionPomdp")
 

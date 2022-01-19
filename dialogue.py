@@ -11,30 +11,37 @@ from domain.observation import ProductObservation
 
 num_players = 2
 max_turns = 5
-
 total_dots = 7
 num_dots = 5
 num_targets = 2
 
+max_turns = 3
+total_dots = 5
+num_dots = 3
+num_targets = 1
+
 dots_A, dots_B, attrs_A, attrs_B  = initialize_dots(total_dots, num_dots, num_targets)
 print("dots A")
 print(dots_A)
+print(attrs_A)
 print("dots B")
 print(dots_B)
+print(attrs_B)
 
 problems = [RankingAndSelectionProblem(
     dots,
     max_turns,
     belief_rep = "particles",
     num_bins=5,
-    num_particles = 2000,
+    num_particles = 0,
+    enumerate_belief = True,
 ) for dots in (dots_A, dots_B)]
 
 planner = pomdp_py.POMCP(
     max_depth = max_turns, # need to change
     discount_factor = 1,
-    num_sims = 1000,
-    exploration_const = 200,
+    num_sims = 5000,
+    exploration_const = 100,
     #rollout_policy = problems[0].agent.policy_model, # need to change per agent?
 )
 
@@ -92,12 +99,21 @@ def take_turn(
     num_dots,
     max_turns,
 ):
+    problem = problems[id_A]
+    agent = problem.agent
+
+    from pomdp_py.utils import TreeDebugger
+    dd = TreeDebugger(agent.tree)
+    belief = agent.belief
+    #import pdb; pdb.set_trace()
+
     # We are player A
     if response_from_B is not None and isinstance(action_A, Ask):
         # Process response from B to previous action_A
         belief_update(
-            problems[id_A].agent, action_A, response_from_B,
-            robot_state_A, countdown_state,
+            agent, action_A, response_from_B,
+            problem.env.state.object_states[agent.id],
+            problem.env.state.object_states[agent.countdown_id],
             planner,
         )
 
@@ -118,9 +134,11 @@ def take_turn(
             action_A0 = Ask(observation_for_A)
             belief_update(
                 problems[0].agent, action_A0, observation_for_A,
-                robot_state_A, countdown_state,
+                problem.env.state.object_states[agent.id],
+                problem.env.state.object_states[agent.countdown_id],
                 planner,
             )
+            #import pdb; pdb.set_trace()
     elif isinstance(action_B, Select):
         response_from_A = None
         # must select
@@ -177,4 +195,3 @@ for turn in range(max_turns):
         print(f"Response B: {response_from_B}")
     print(f"Action B: {action_B}")
 
-    import pdb; pdb.set_trace()
