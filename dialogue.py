@@ -110,12 +110,14 @@ def take_turn(
     # We are player A
     if response_from_B is not None and isinstance(action_A, Ask):
         # Process response from B to previous action_A
+        print(f"num particles {len(agent.tree.belief.particles)}")
         belief_update(
             agent, action_A, response_from_B,
             problem.env.state.object_states[agent.id],
             problem.env.state.object_states[agent.countdown_id],
             planner,
         )
+        print(f"num particles {len(agent.tree.belief.particles)}")
 
     if isinstance(action_B, Ask):
         # Respond if asked, only after first turn
@@ -131,13 +133,19 @@ def take_turn(
 
         if observation_for_A_vec.sum() > 0:
             # create dummy action
-            action_A0 = Ask(observation_for_A)
+            action_A0 = Ask(observation_for_A_vec)
+            dd = TreeDebugger(agent.tree)
+            print(f"num particles {len(agent.tree.belief.particles)}")
+            print(f"num particles {len(agent.tree[action_A0][observation_for_A].belief.particles)}")
+            # particle reinvigoration fails even though a node has been visited > 0 times.
+            import pdb; pdb.set_trace()
             belief_update(
-                problems[0].agent, action_A0, observation_for_A,
+                agent, action_A0, observation_for_A,
                 problem.env.state.object_states[agent.id],
                 problem.env.state.object_states[agent.countdown_id],
                 planner,
             )
+            import pdb; pdb.set_trace()
             #import pdb; pdb.set_trace()
     elif isinstance(action_B, Select):
         response_from_A = None
@@ -162,6 +170,8 @@ action_A = Pass()
 action_B = Pass()
 response_from_A = None
 response_from_B = None
+rA = 0
+rB = 0
 default_response = ProductObservation({id: 0 for id in range(num_dots)})
 for turn in range(max_turns):
     # player A goes first
@@ -195,3 +205,10 @@ for turn in range(max_turns):
         print(f"Response B: {response_from_B}")
     print(f"Action B: {action_B}")
 
+
+    rA += reward_A
+    rB += reward_B
+    if isinstance(action_A, Select):
+        break
+
+print(f"Total rewards: A ({rA}) B ({rB})")
