@@ -15,7 +15,7 @@ total_dots = 7
 num_dots = 5
 num_targets = 2
 
-max_turns = 3
+max_turns = 5
 total_dots = 5
 num_dots = 3
 num_targets = 1
@@ -102,22 +102,20 @@ def take_turn(
     problem = problems[id_A]
     agent = problem.agent
 
-    from pomdp_py.utils import TreeDebugger
-    dd = TreeDebugger(agent.tree)
     belief = agent.belief
     #import pdb; pdb.set_trace()
 
     # We are player A
     if response_from_B is not None and isinstance(action_A, Ask):
         # Process response from B to previous action_A
-        print(f"num particles {len(agent.tree.belief.particles)}")
+        #print(f"num particles {len(agent.tree.belief.particles)}")
         belief_update(
             agent, action_A, response_from_B,
             problem.env.state.object_states[agent.id],
             problem.env.state.object_states[agent.countdown_id],
             planner,
         )
-        print(f"num particles {len(agent.tree.belief.particles)}")
+        #print(f"num particles {len(agent.tree.belief.particles)}")
 
     if isinstance(action_B, Ask):
         # Respond if asked, only after first turn
@@ -134,18 +132,21 @@ def take_turn(
         if observation_for_A_vec.sum() > 0:
             # create dummy action
             action_A0 = Ask(observation_for_A_vec)
-            dd = TreeDebugger(agent.tree)
-            print(f"num particles {len(agent.tree.belief.particles)}")
-            print(f"num particles {len(agent.tree[action_A0][observation_for_A].belief.particles)}")
+            next_node = agent.tree[action_A0][observation_for_A]
+            num_particles = len(next_node.belief.particles)
+            #print(f"num particles {len(agent.tree.belief.particles)}")
+            #print(f"num particles {num_particles}")
             # particle reinvigoration fails even though a node has been visited > 0 times.
-            import pdb; pdb.set_trace()
+            if num_particles == 0:
+                # it's possible we have moved to a node that has not been expanded
+                # replan to populate beliefs
+                plan(planner, problems[id_A], steps_left = max_turns - turn)
             belief_update(
                 agent, action_A0, observation_for_A,
                 problem.env.state.object_states[agent.id],
                 problem.env.state.object_states[agent.countdown_id],
                 planner,
             )
-            import pdb; pdb.set_trace()
             #import pdb; pdb.set_trace()
     elif isinstance(action_B, Select):
         response_from_A = None
@@ -154,7 +155,7 @@ def take_turn(
     else:
         response_from_A = None
 
-    # Plan and ask
+    # Plan and take action
     action_A = plan(planner, problems[id_A], steps_left = max_turns - turn)
     reward_A = problems[id_A].env.state_transition(action_A, execute=True)
 

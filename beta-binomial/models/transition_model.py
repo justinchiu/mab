@@ -39,6 +39,7 @@ class ArmTransitionModel(pomdp_py.TransitionModel):
         return 1 - self._epsilon
 
     def sample(self, state, action):
+        return state.object_states[self.id]
         return copy.deepcopy(state.object_states[self.id])
         if isinstance(action, Select):
             return np.random.beta(1, 1)

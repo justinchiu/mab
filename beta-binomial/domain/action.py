@@ -1,4 +1,5 @@
 
+import numpy as np
 import pomdp_py
 
 class Action(pomdp_py.Action):
@@ -23,7 +24,7 @@ class Ask(Action):
         super().__init__("ask", ids)
 
     def __hash__(self):
-        return hash(self.name + str(self.val))
+        return hash(self.name + str(np.packbits(self.val).item()))
     def __eq__(self, other):
         if isinstance(other, Ask):
             return self.name == other.name and (self.val == other.val).all()
