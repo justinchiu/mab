@@ -19,12 +19,12 @@ class PolicyModel(pomdp_py.RandomRollout):
         self.SELECT = [Select(id) for id in range(num_dots)]
         #self.ASK = [Ask([id]) for id in range(num_dots)]
         #self.ASK = [Ask(id) for id in range(num_dots)]
-        #self.ASK = [Ask(np.array([
-            #x == id for x in range(num_dots)
-        #], dtype=bool)) for id in range(num_dots)]
+        self.ASK = [Ask(np.array([
+            x == id for x in range(num_dots)
+        ], dtype=bool)) for id in range(num_dots)]
         # ASK = all binary vectors of size num_dots
-        all_vecs = generate_all_boolean_vectors(num_dots)
-        self.ASK = [Ask(x) for x in all_vecs]
+        #all_vecs = generate_all_boolean_vectors(num_dots)
+        #self.ASK = [Ask(x) for x in all_vecs]
         self.ACTIONS = self.SELECT + self.ASK
         self.PASS = [Pass()]
 

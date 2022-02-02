@@ -1,52 +1,37 @@
+"""
+In this problem we test whether models can deal with ambiguity.
+Policy needs to select the unambiguous dot.
+"""
 
 from typing import Optional
+from itertools import product
 
 import numpy as np
 import pomdp_py
+from pomdp_py.utils.debugging import TreeDebugger
 
-from problem import RankingAndSelectionProblem, initialize_dots, belief_update
+from problem import RankingAndSelectionProblem, belief_update
 from domain.action import Ask, Select, Pass
 from domain.observation import ProductObservation
 
-
-num_players = 2
-max_turns = 7
-total_dots = 7
-num_dots = 5
-num_targets = 2
 
 max_turns = 5
 total_dots = 5
 num_dots = 3
 num_targets = 1
 
-def initialize_dots3():
-    total_dots = 5
-    num_dots = 3
-    num_targets = 1
-    # attributes
-    color = ["black", "grey", "white"]
-    size = ["large", "medium", "small"]
-    attributes = list(product(color, size))[:total_dots]
+def initialize_dots():
+    bs = ("black", "small")
+    gl = ("grey", "large")
 
-    all_dot_vector = np.zeros(total_dots, dtype=np.bool_)
-    diff = total_dots - num_dots
-
-    target_dots = np.random.choice(
-        num_dots - diff, num_targets, replace=False)
-
-    all_dot_vector[target_dots + diff] = True
-
-    dot_vector_A = all_dot_vector[:num_dots]
-    dot_vector_B = all_dot_vector[-num_dots:]
-    attributes_A = attributes[:num_dots]
-    attributes_B = attributes[-num_dots:]
-    import pdb; pdb.set_trace()
+    dot_vector_A = np.array([True, True])
+    dot_vector_B = np.array([True, True, True])
+    attributes_A = [bs, gl]
+    attributes_B = [bs, gl, gl]
     return dot_vector_A, dot_vector_B, attributes_A, attributes_B
 
 
-dots_A, dots_B, attrs_A, attrs_B  = initialize_dots(total_dots, num_dots, num_targets)
-#dots_A, dots_B, attrs_A, attrs_B  = initialize_dots3()
+dots_A, dots_B, attrs_A, attrs_B  = initialize_dots()
 print("dots A")
 print(dots_A)
 print(attrs_A)
@@ -88,12 +73,14 @@ def observe(action_A, attrs_A, attrs_B) -> np.array:
     response_from_B = np.zeros_like(action_A.val)
     # the ask gives information about dots A has
     # use to update player B's belief
-    observation_for_B = np.zeros_like(action_A.val)
+    observation_for_B = np.zeros(len(attrs_B), dtype=bool)
     for i, (attr, present) in enumerate(zip(attrs_A, action_A.val)):
-        response_from_B[i] = present and attr in attrs_B
-    for i, attr in enumerate(attrs_B):
-        if attr in attrs_A:
-            observation_for_B[i] = action_A.val[attrs_A.index(attr)]
+        if present:
+            # for each nonzero value of action_A, respond with whether B can see that attribute
+            response_from_B[i] = attr in attrs_B
+            for i, attrB in enumerate(attrs_B):
+                if attrB == attr:
+                    observation_for_B[i] = True
     return response_from_B, observation_for_B
 
 """
@@ -148,12 +135,12 @@ def take_turn(
         response_from_A, observation_for_A_vec = observe(action_B, attrs_B, attrs_A)
         response_from_A = ProductObservation({
             id: 1 if action_B.val[id] and response_from_A[id] else 0
-        for id in range(num_dots)})
+        for id in range(response_from_A.shape[0])})
 
         # convert Ask from B to an Observation for A
         observation_for_A = ProductObservation({
             id: 1 if observation_for_A_vec[id] else 0
-        for id in range(num_dots)})
+        for id in range(observation_for_A_vec.shape[0])})
 
         if observation_for_A_vec.sum() > 0:
             # create dummy action
@@ -212,6 +199,7 @@ for turn in range(max_turns):
         num_dots = num_dots,
         max_turns = max_turns
     )
+    action_A = Ask(np.array([False, True]))
 
     print(f"Turn {turn}")
     if isinstance(action_B, Ask):
