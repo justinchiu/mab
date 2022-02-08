@@ -30,6 +30,7 @@ class RewardModel(pomdp_py.RewardModel):
             #return state.object_states[action.val]["prob"]
             if state.object_states[action.val]["prob"] > 0.5:
                 return 10
+                return 10 * state.object_states[action.val]["prob"]
             else:
                 return -100
         else:

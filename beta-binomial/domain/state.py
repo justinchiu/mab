@@ -1,20 +1,22 @@
 
 from typing import Tuple
 
+import numpy as np
+
 import pomdp_py
 
 class ArmState(pomdp_py.ObjectState):
     def __init__(
         self,
         id: int,
-        prob: float,
+        probs: np.array,
         shape: str = "large",
         color: str = "black",
         xy: Tuple[float, float] = (0,0),
     ):
         super().__init__("arm", {
             "id": id,
-            "prob": prob,
+            "probs": probs,
             "shape": shape,
             "color": color,
             "xy": xy,

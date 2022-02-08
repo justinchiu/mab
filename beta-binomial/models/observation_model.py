@@ -37,6 +37,7 @@ class ArmObservationModel(pomdp_py.ObservationModel):
         #prob = next_state.object_states[self.id]["prob"]
         if isinstance(action, Ask):
             prob = next_state["prob"]
+            import pdb; pdb.set_trace()
             return prob if observation.feedback else 1 - prob
         elif isinstance(action, Select):
             return 0.01 if observation.feedback else 0.99
@@ -47,6 +48,7 @@ class ArmObservationModel(pomdp_py.ObservationModel):
 
     def sample(self, next_state, action, **kwargs):
         if isinstance(action, Ask):
+            import pdb; pdb.set_trace()
             prob = next_state.object_states[self.id]["prob"]
             # TODO: handle vector-valued action
             #y = np.random.binomial(1, prob) if action.val == self.id else 0

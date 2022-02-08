@@ -24,9 +24,9 @@ DBG_UPDATE = False
 
 def initialize_dots(total_dots=9, num_dots=7, num_targets=4):
     # attributes
-    color = ["black", "grey", "white"]
+    color = ["black", "grey", "white", "red", "blue", "green"]
     size = ["large", "medium", "small"]
-    attributes = list(product(color, size))[:total_dots]
+    attributes = np.random.permutation(list(product(color, size))).tolist()
 
     all_dot_vector = np.zeros(total_dots, dtype=np.bool_)
     diff = total_dots - num_dots
@@ -38,8 +38,22 @@ def initialize_dots(total_dots=9, num_dots=7, num_targets=4):
 
     dot_vector_A = all_dot_vector[:num_dots]
     dot_vector_B = all_dot_vector[-num_dots:]
-    attributes_A = attributes[:num_dots]
-    attributes_B = attributes[-num_dots:]
+
+    # assign attributes
+    fresh = attributes[total_dots:]
+    def get_attrs(attributes, fresh, dot_vector_A):
+        attributes_A = []
+        num_shared = 0
+        for i in range(num_dots):
+            if dot_vector_A[i]:
+                attributes_A.append(fresh[num_shared])
+                num_shared += 1
+            else:
+                attributes_A.append(attributes[i])
+        return attributes_A
+    fresh = attributes[2*total_dots:]
+    attributes_A = get_attrs(attributes, fresh, dot_vector_A)
+    attributes_B = get_attrs(attributes[total_dots:], fresh, dot_vector_B)
     return dot_vector_A, dot_vector_B, attributes_A, attributes_B
 
 

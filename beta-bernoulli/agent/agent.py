@@ -45,4 +45,4 @@ class RsAgent(pomdp_py.Agent):
         self._history = None
 
     def read(self, message):
-        asdf
+        pass

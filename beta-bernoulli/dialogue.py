@@ -10,15 +10,15 @@ from domain.observation import ProductObservation
 
 
 num_players = 2
-max_turns = 7
+max_turns = 5
 total_dots = 7
 num_dots = 5
 num_targets = 2
 
-max_turns = 5
-total_dots = 5
-num_dots = 3
-num_targets = 1
+#max_turns = 5
+#total_dots = 5
+#num_dots = 3
+#num_targets = 1
 
 def initialize_dots3():
     total_dots = 5
@@ -56,7 +56,7 @@ print(attrs_B)
 
 problems = [RankingAndSelectionProblem(
     dots,
-    max_turns,
+    2*max_turns,
     belief_rep = "particles",
     num_bins=5,
     num_particles = 0,
@@ -64,11 +64,12 @@ problems = [RankingAndSelectionProblem(
 ) for dots in (dots_A, dots_B)]
 
 planner = pomdp_py.POMCP(
-    max_depth = max_turns, # need to change
+    max_depth = 2*max_turns, # need to change
     discount_factor = 1,
     num_sims = 10000,
     exploration_const = 100,
     #rollout_policy = problems[0].agent.policy_model, # need to change per agent?
+    num_rollouts=1,
 )
 
 def plan(planner, problem, steps_left) -> pomdp_py.Action:
@@ -166,6 +167,7 @@ def take_turn(
             if num_particles == 0:
                 # it's possible we have moved to a node that has not been expanded
                 # replan to populate beliefs
+                # TODO: replan with given action! just this call makes things not work...
                 plan(planner, problems[id_A], steps_left = max_turns - turn)
             belief_update(
                 agent, action_A0, observation_for_A,
