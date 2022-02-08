@@ -25,7 +25,7 @@ DBG_UPDATE = False
 def initialize_dots(total_dots=9, num_dots=7, num_targets=4):
     # attributes
     color = ["black", "grey", "white", "red", "blue", "green"]
-    size = ["large", "medium", "small"]
+    size = ["large", "medium", "small", "medium-large", "medium-small"]
     attributes = np.random.permutation(list(product(color, size))).tolist()
 
     all_dot_vector = np.zeros(total_dots, dtype=np.bool_)

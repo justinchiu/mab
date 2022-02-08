@@ -20,6 +20,10 @@ num_targets = 2
 #num_dots = 3
 #num_targets = 1
 
+total_dots = 9
+num_dots = 7
+num_targets = 4
+
 def initialize_dots3():
     total_dots = 5
     num_dots = 3
