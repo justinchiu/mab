@@ -1,6 +1,4 @@
 
-import random
-
 import numpy as np
 import pomdp_py
 
@@ -31,14 +29,9 @@ class ArmObservationModel(pomdp_py.ObservationModel):
 
     def probability(self, observation, next_state, action, **kwargs):
         # p(observation | next_state, action)
-        # for the beta bernoulli setting
-        #alpha = next_state.alpha
-        #t = next_state.t
-        #prob = alpha / t
-        #return prob if observation else 1 - prob
-        #prob = next_state.object_states[self.id]["prob"]
         if isinstance(action, Ask):
             prob = next_state["prob"]
+            import pdb; pdb.set_trace()
             return prob if observation.feedback else 1 - prob
         elif isinstance(action, Select):
             return 0.01 if observation.feedback else 0.99
@@ -52,8 +45,7 @@ class ArmObservationModel(pomdp_py.ObservationModel):
             prob = next_state.object_states[self.id]["prob"]
             # TODO: handle vector-valued action
             #y = np.random.binomial(1, prob) if action.val == self.id else 0
-            #y = np.random.binomial(1, prob) if action.val[self.id] else 0
-            y = 1 if action.val[self.id] and random.random() <= prob else 0
+            y = np.random.binomial(1, prob) if action.val[self.id] else 0
             # return y if action[self.id], y ~ Bern(next_state.prob)
             return ArmObservation(self.id, y)
         elif isinstance(action, Select):

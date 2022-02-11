@@ -4,9 +4,9 @@ from typing import Optional
 import numpy as np
 import pomdp_py
 
-from problem import RankingAndSelectionProblem, initialize_dots, belief_update
-from domain.action import Ask, Select, Pass
-from domain.observation import ProductObservation
+from mab.beta_bernoulli.problem import RankingAndSelectionProblem, initialize_dots, belief_update
+from mab.beta_bernoulli.domain.action import Ask, Select, Pass
+from mab.beta_bernoulli.domain.observation import ProductObservation
 
 
 num_players = 2
@@ -62,7 +62,7 @@ problems = [RankingAndSelectionProblem(
     dots,
     2*max_turns,
     belief_rep = "particles",
-    num_bins=5,
+    num_bins=2,
     num_particles = 0,
     enumerate_belief = True,
 ) for dots in (dots_A, dots_B)]

@@ -4,8 +4,8 @@ import random
 import numpy as np
 import pomdp_py
 
-from domain.action import Ask, Select, Pass
-from domain.observation import ArmObservation, ProductObservation
+from mab.beta_bernoulli.domain.action import Ask, Select, Pass
+from mab.beta_bernoulli.domain.observation import ArmObservation, ProductObservation
 
 class ObservationModel(pomdp_py.OOObservationModel):
     def __init__(self, num_dots):

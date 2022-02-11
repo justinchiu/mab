@@ -12,11 +12,11 @@ import numpy as np
 import pomdp_py
 from pomdp_py.utils import TreeDebugger
 
-from agent.agent import RsAgent
-from agent.belief import ProductBelief
-from domain.action import Ask
-from domain.state import ArmState, ProductState, Go, Stop, CountdownState
-from env.env import RsEnvironment
+from mab.beta_bernoulli.agent.agent import RsAgent
+from mab.beta_bernoulli.agent.belief import ProductBelief
+from mab.beta_bernoulli.domain.action import Ask
+from mab.beta_bernoulli.domain.state import ArmState, ProductState, Go, Stop, CountdownState
+from mab.beta_bernoulli.env.env import RsEnvironment
 
 DBG_OUTER = False
 DBG_UPDATE = False

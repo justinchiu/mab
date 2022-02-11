@@ -1,11 +1,11 @@
 import pomdp_py
 
-from models.policy_model import PolicyModel
-from models.transition_model import ProductTransitionModel
-from models.observation_model import ObservationModel
-from models.reward_model import RewardModel
+from ..models.policy_model import PolicyModel
+from ..models.transition_model import ProductTransitionModel
+from ..models.observation_model import ObservationModel
+from ..models.reward_model import RewardModel
 
-from agent.belief import initialize_belief
+from .belief import initialize_belief
 
 class RsAgent(pomdp_py.Agent):
     def __init__(

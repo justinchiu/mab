@@ -2,8 +2,8 @@ import random
 import numpy as np
 import pomdp_py
 
-from domain.action import Action, Ask, Select, Pass
-from domain.state import Go, Stop
+from mab.beta_bernoulli.domain.action import Action, Ask, Select, Pass
+from mab.beta_bernoulli.domain.state import Go, Stop
 
 def generate_all_boolean_vectors(size):
     a = np.arange(2 ** size, dtype=np.uint8)[:,None]

@@ -3,8 +3,8 @@
 import copy
 import pomdp_py
 
-from domain.action import Ask, Select, Pass
-from domain.state import Go, Stop, CountdownState, ProductState
+from mab.beta_bernoulli.domain.action import Ask, Select, Pass
+from mab.beta_bernoulli.domain.state import Go, Stop, CountdownState, ProductState
 
 class ProductTransitionModel(pomdp_py.OOTransitionModel):
     def __init__(self, num_dots, max_turns=5, epsilon=1e-9):

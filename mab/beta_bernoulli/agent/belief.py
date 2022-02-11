@@ -4,7 +4,7 @@ import numpy as np
 
 import pomdp_py
 
-from domain.state import ArmState, ProductState, Go, Stop, CountdownState
+from mab.beta_bernoulli.domain.state import ArmState, ProductState, Go, Stop, CountdownState
 
 class ProductBelief(pomdp_py.OOBelief):
     def __init__(self, arm_beliefs):

@@ -1,7 +1,7 @@
 import pomdp_py
 
-from domain.action import Ask, Select, Pass
-from domain.state import Go, Stop
+from ..domain.action import Ask, Select, Pass
+from ..domain.state import Go, Stop
 
 class RewardModel(pomdp_py.RewardModel):
     def __init__(self, num_dots):
