@@ -23,10 +23,11 @@ num_targets = 1
 def initialize_dots():
     bs = ("black", "small")
     gl = ("grey", "large")
+    rm = ("red", "medium")
 
-    dot_vector_A = np.array([True, True])
-    dot_vector_B = np.array([True, True, True])
-    attributes_A = [bs, gl]
+    dot_vector_A = np.array([1, 2, 0])
+    dot_vector_B = np.array([1, 1, 1])
+    attributes_A = [bs, gl, rm]
     attributes_B = [bs, gl, gl]
     return dot_vector_A, dot_vector_B, attributes_A, attributes_B
 
@@ -68,20 +69,29 @@ def plan(planner, problem, steps_left) -> pomdp_py.Action:
 def observe(action_A, attrs_A, attrs_B) -> np.array:
     if not isinstance(action_A, Ask):
         return False
+    lenA = len(attrs_A)
+    lenB = len(attrs_B)
     # whether player B can see anything with the attributes of player A's ask
     # give back to player A
-    response_from_B = np.zeros_like(action_A.val)
+    response_from_B = np.zeros_like(action_A.val, dtype=int)
     # the ask gives information about dots A has
     # use to update player B's belief
-    observation_for_B = np.zeros(len(attrs_B), dtype=bool)
+    observation_for_B = np.zeros(len(attrs_B), dtype=int)
     for i, (attr, present) in enumerate(zip(attrs_A, action_A.val)):
         if present:
             # for each nonzero value of action_A, respond with whether B can see that attribute
-            response_from_B[i] = attr in attrs_B
-            for i, attrB in enumerate(attrs_B):
+            for j, attrB in enumerate(attrs_B):
                 if attrB == attr:
-                    observation_for_B[i] = True
+                    observation_for_B[j] += 1
+                    response_from_B[i] += 1
     return response_from_B, observation_for_B
+
+def force_expansion(planner, agent, action, obs, steps_left):
+    planner.clear_agent()
+    planner._agent = agent
+    planner.set_max_depth(steps_left)
+    planner.set_rollout_policy(agent.policy_model)
+    planner.force_expansion(action, obs)
 
 """
 On the first turn, player A and B must initialize their belief trees.
@@ -133,18 +143,25 @@ def take_turn(
     if isinstance(action_B, Ask):
         # Respond if asked, only after first turn
         response_from_A, observation_for_A_vec = observe(action_B, attrs_B, attrs_A)
+        # sigh, convert to dict
         response_from_A = ProductObservation({
-            id: 1 if action_B.val[id] and response_from_A[id] else 0
+            id: response_from_A[id]
         for id in range(response_from_A.shape[0])})
 
         # convert Ask from B to an Observation for A
+        # WRONG
         observation_for_A = ProductObservation({
-            id: 1 if observation_for_A_vec[id] else 0
+            id: observation_for_A_vec[id]
         for id in range(observation_for_A_vec.shape[0])})
 
         if observation_for_A_vec.sum() > 0:
             # create dummy action
             action_A0 = Ask(observation_for_A_vec)
+            if agent.tree[action_A0][observation_for_A] is None:
+                force_expansion(
+                    planner, agent, action_A0, observation_for_A,
+                    steps_left = max_turns - turn,
+                )
             next_node = agent.tree[action_A0][observation_for_A]
             num_particles = len(next_node.belief.particles)
             #print(f"num particles {len(agent.tree.belief.particles)}")
@@ -197,9 +214,8 @@ for turn in range(max_turns):
         action_B = action_B,
         attrs_A = attrs_A, attrs_B = attrs_B,
         num_dots = num_dots,
-        max_turns = max_turns
+        max_turns = max_turns,
     )
-    action_A = Ask(np.array([False, True]))
 
     print(f"Turn {turn}")
     if isinstance(action_B, Ask):

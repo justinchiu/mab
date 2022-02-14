@@ -9,10 +9,10 @@ def generate_all_boolean_vectors(size):
     a = np.arange(2 ** size, dtype=np.uint8)[:,None]
     return np.unpackbits(a, axis=1)[1:,-size:]
 
-def aggregate_ask(history):
+def convert_numpy(history):
     asks = [a.val for (a,o) in history if isinstance(a, Ask)]
-    obs = [any(o.obs.values()) for (a,o) in history if isinstance(a, Ask)]
-    return np.vstack(asks).any(0) if asks else asks, np.array(obs) if obs else obs
+    obs = [tuple(o.obs.values()) for (a,o) in history if isinstance(a, Ask)]
+    return np.vstack(asks) if asks else asks, np.array(obs) if obs else obs
 
 def get_belief_order(state, num_dots):
     probs = [
@@ -33,9 +33,10 @@ def get_fresh_dot(belief_order, asks):
         if not asks[dot]:
             return dot
 
-def get_selected_dot(history):
-    # last action had a positive observation
-    return history[-1][0].val.nonzero()[0].item()
+def get_selected_dot(asks, obs):
+    idx, dot = (obs == 1).nonzero()
+    # tells us the ask
+    return dot[0]
 
 class PolicyModel(pomdp_py.RandomRollout):
     """A simple policy model with uniform prior over a
@@ -48,12 +49,12 @@ class PolicyModel(pomdp_py.RandomRollout):
         self.SELECT = [Select(id) for id in range(num_dots)]
         #self.ASK = [Ask([id]) for id in range(num_dots)]
         #self.ASK = [Ask(id) for id in range(num_dots)]
-        self.ASK = [Ask(np.array([
-            x == id for x in range(num_dots)
-        ], dtype=bool)) for id in range(num_dots)]
+        #self.ASK = [Ask(np.array([
+            #x == id for x in range(num_dots)
+        #], dtype=bool)) for id in range(num_dots)]
         # ASK = all binary vectors of size num_dots
-        #all_vecs = generate_all_boolean_vectors(num_dots)
-        #self.ASK = [Ask(x) for x in all_vecs]
+        all_vecs = generate_all_boolean_vectors(num_dots)
+        self.ASK = [Ask(x) for x in all_vecs]
         self.ACTIONS = self.SELECT + self.ASK
         self.PASS = [Pass()]
 
@@ -87,15 +88,16 @@ class PolicyModel(pomdp_py.RandomRollout):
         if isinstance(last_action, Select) or isinstance(last_action, Pass):
             return Pass()
 
-        asks, obs = aggregate_ask(history)
-        if obs.any():
+        asks, obs = convert_numpy(history)
+        if (obs == 1).any():
             # select
-            idx = get_selected_dot(history)
-            import pdb; pdb.set_trace()
+            idx = get_selected_dot(asks, obs)
             return Select(idx)
         else:
-            idx = get_fresh_dot(belief_order, asks)
-            import pdb; pdb.set_trace()
+            idx = get_fresh_dot(belief_order, asks.any(0))
+            if idx is None:
+                # no arms yielded good answers
+                return Select(0)
             return Ask(one_hot_bool(num_dots, idx))
 
 if __name__ == "__main__":

@@ -75,11 +75,15 @@ class RankingAndSelectionProblem(pomdp_py.OOPOMDP):
         self.num_dots = num_dots
         self.num_targets = num_targets
 
+        probs = np.zeros((num_dots, num_dots))
+        for id in range(num_dots):
+            probs[id, dot_vector[id]] = 1.
         state = {
             id: ArmState(
-                id, 1 - self.delta if is_good else self.delta,
+                id,
+                probs[id],
                 shape = "large", color = "grey", xy = (1,1),
-            ) for id, is_good in enumerate(self.dot_vector)
+            ) for id in range(num_dots)
         }
         state[num_dots] = Go()
         state[num_dots+1] = CountdownState(max_turns)
