@@ -4,21 +4,10 @@ from typing import Optional
 import numpy as np
 import pomdp_py
 
-from problem import RankingAndSelectionProblem, initialize_dots, belief_update
-from domain.action import Ask, Select, Pass
-from domain.observation import ProductObservation
+from mab.beta_bernoulli.problem import RankingAndSelectionProblem, initialize_dots, belief_update
+from mab.beta_bernoulli.domain.action import Ask, Select, Pass
+from mab.beta_bernoulli.domain.observation import ProductObservation
 
-
-num_players = 2
-max_turns = 7
-total_dots = 7
-num_dots = 5
-num_targets = 2
-
-max_turns = 5
-total_dots = 5
-num_dots = 3
-num_targets = 1
 
 def initialize_dots3():
     total_dots = 5
@@ -44,32 +33,6 @@ def initialize_dots3():
     import pdb; pdb.set_trace()
     return dot_vector_A, dot_vector_B, attributes_A, attributes_B
 
-
-dots_A, dots_B, attrs_A, attrs_B  = initialize_dots(total_dots, num_dots, num_targets)
-#dots_A, dots_B, attrs_A, attrs_B  = initialize_dots3()
-print("dots A")
-print(dots_A)
-print(attrs_A)
-print("dots B")
-print(dots_B)
-print(attrs_B)
-
-problems = [RankingAndSelectionProblem(
-    dots,
-    max_turns,
-    belief_rep = "particles",
-    num_bins=5,
-    num_particles = 0,
-    enumerate_belief = True,
-) for dots in (dots_A, dots_B)]
-
-planner = pomdp_py.POMCP(
-    max_depth = max_turns, # need to change
-    discount_factor = 1,
-    num_sims = 10000,
-    exploration_const = 100,
-    #rollout_policy = problems[0].agent.policy_model, # need to change per agent?
-)
 
 def plan(planner, problem, steps_left) -> pomdp_py.Action:
     planner.clear_agent()
@@ -116,6 +79,8 @@ Simplification: Responses are sent separately from Asks
 """
 
 def take_turn(
+    problems,
+    planner,
     id_A,
     turn,
     action_A,
@@ -166,6 +131,7 @@ def take_turn(
             if num_particles == 0:
                 # it's possible we have moved to a node that has not been expanded
                 # replan to populate beliefs
+                # TODO: replan with given action! just this call makes things not work...
                 plan(planner, problems[id_A], steps_left = max_turns - turn)
             belief_update(
                 agent, action_A0, observation_for_A,
@@ -188,54 +154,104 @@ def take_turn(
     return response_from_A, action_A, reward_A
 
 
-# initialize trees for both agents
-# not sure this is necessary
-_ = plan(planner, problems[0], steps_left = max_turns)
-_ = plan(planner, problems[1], steps_left = max_turns)
+def main():
+    num_players = 2
+    max_turns = 5
+    total_dots = 7
+    num_dots = 5
+    num_targets = 2
 
-action_A = Pass()
-action_B = Pass()
-response_from_A = None
-response_from_B = None
-rA = 0
-rB = 0
-default_response = ProductObservation({id: 0 for id in range(num_dots)})
-for turn in range(max_turns):
-    # player A goes first
-    response_from_A, action_A, reward_A = take_turn(
-        id_A = 0,
-        turn = turn,
-        action_A = action_A,
-        response_from_B = response_from_B,
-        action_B = action_B,
-        attrs_A = attrs_A, attrs_B = attrs_B,
-        num_dots = num_dots,
-        max_turns = max_turns
+    #max_turns = 5
+    #total_dots = 5
+    #num_dots = 3
+    #num_targets = 1
+
+    total_dots = 9
+    num_dots = 7
+    num_targets = 4
+
+    dots_A, dots_B, attrs_A, attrs_B  = initialize_dots(total_dots, num_dots, num_targets)
+    #dots_A, dots_B, attrs_A, attrs_B  = initialize_dots3()
+    print("dots A")
+    print(dots_A)
+    print(attrs_A)
+    print("dots B")
+    print(dots_B)
+    print(attrs_B)
+
+    problems = [RankingAndSelectionProblem(
+        dots,
+        2*max_turns,
+        belief_rep = "particles",
+        num_bins=2,
+        num_particles = 0,
+        enumerate_belief = True,
+    ) for dots in (dots_A, dots_B)]
+
+    planner = pomdp_py.POMCP(
+        max_depth = 2*max_turns, # need to change
+        discount_factor = 1,
+        num_sims = 10000,
+        exploration_const = 100,
+        #rollout_policy = problems[0].agent.policy_model, # need to change per agent?
+        num_rollouts=1,
     )
 
-    print(f"Turn {turn}")
-    if isinstance(action_B, Ask):
-        print(f"Response A: {response_from_A}")
-    print(f"Action A: {action_A}")
+    # initialize trees for both agents
+    # not sure this is necessary
+    _ = plan(planner, problems[0], steps_left = max_turns)
+    _ = plan(planner, problems[1], steps_left = max_turns)
 
-    response_from_B, action_B, reward_B = take_turn(
-        id_A = 1,
-        turn = turn,
-        action_A = action_B,
-        response_from_B = response_from_A,
-        action_B = action_A,
-        attrs_A = attrs_B, attrs_B = attrs_A,
-        num_dots = num_dots,
-        max_turns = max_turns,
-    )
-    if isinstance(action_A, Ask):
-        print(f"Response B: {response_from_B}")
-    print(f"Action B: {action_B}")
+    action_A = Pass()
+    action_B = Pass()
+    response_from_A = None
+    response_from_B = None
+    rA = 0
+    rB = 0
+    default_response = ProductObservation({id: 0 for id in range(num_dots)})
+    for turn in range(max_turns):
+        # player A goes first
+        response_from_A, action_A, reward_A = take_turn(
+            problems,
+            planner,
+            id_A = 0,
+            turn = turn,
+            action_A = action_A,
+            response_from_B = response_from_B,
+            action_B = action_B,
+            attrs_A = attrs_A, attrs_B = attrs_B,
+            num_dots = num_dots,
+            max_turns = max_turns
+        )
+
+        print(f"Turn {turn}")
+        if isinstance(action_B, Ask):
+            print(f"Response A: {response_from_A}")
+        print(f"Action A: {action_A}")
+
+        response_from_B, action_B, reward_B = take_turn(
+            problems,
+            planner,
+            id_A = 1,
+            turn = turn,
+            action_A = action_B,
+            response_from_B = response_from_A,
+            action_B = action_A,
+            attrs_A = attrs_B, attrs_B = attrs_A,
+            num_dots = num_dots,
+            max_turns = max_turns,
+        )
+        if isinstance(action_A, Ask):
+            print(f"Response B: {response_from_B}")
+        print(f"Action B: {action_B}")
 
 
-    rA += reward_A
-    rB += reward_B
-    if isinstance(action_A, Select):
-        break
+        rA += reward_A
+        rB += reward_B
+        if isinstance(action_A, Select):
+            break
 
-print(f"Total rewards: A ({rA}) B ({rB})")
+    print(f"Total rewards: A ({rA}) B ({rB})")
+
+if __name__ == "__main__":
+    main()

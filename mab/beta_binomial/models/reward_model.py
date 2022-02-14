@@ -1,7 +1,7 @@
 import pomdp_py
 
-from domain.action import Ask, Select, Pass
-from domain.state import Go, Stop
+from mab.beta_bernoulli.domain.action import Ask, Select, Pass
+from mab.beta_bernoulli.domain.state import Go, Stop
 
 class RewardModel(pomdp_py.RewardModel):
     def __init__(self, num_dots):
@@ -25,14 +25,12 @@ class RewardModel(pomdp_py.RewardModel):
             #return -.1
             return -1
         elif isinstance(action, Select):
-            #return state[action.val].prob
-            # increment action.val by 1, since 0th state is the robot
-            #return state.object_states[action.val]["prob"]
-            if state.object_states[action.val]["prob"] > 0.5:
-                return 10
-                return 10 * state.object_states[action.val]["prob"]
-            else:
-                return -100
+            win = 10
+            fail = -100
+            prob = state.object_states[action.val]["prob"]
+            # prob gives the probability a reference resolves to n diff dots
+            prob_win = prob[1]
+            return prob_win * win + (1 - prob_win) * fail
         else:
             raise ValueError(f"Invalid action: {action}")
 

@@ -1,9 +1,11 @@
 
+import random
+
 import numpy as np
 import pomdp_py
 
-from domain.action import Ask, Select, Pass
-from domain.observation import ArmObservation, ProductObservation
+from mab.beta_bernoulli.domain.action import Ask, Select, Pass
+from mab.beta_bernoulli.domain.observation import ArmObservation, ProductObservation
 
 class ObservationModel(pomdp_py.OOObservationModel):
     def __init__(self, num_dots):
@@ -29,24 +31,24 @@ class ArmObservationModel(pomdp_py.ObservationModel):
 
     def probability(self, observation, next_state, action, **kwargs):
         # p(observation | next_state, action)
+        # observation in {1, ..., num_dots}?
         if isinstance(action, Ask):
             prob = next_state["prob"]
-            import pdb; pdb.set_trace()
-            return prob if observation.feedback else 1 - prob
+            return prob[observation.feedback]
         elif isinstance(action, Select):
-            return 0.01 if observation.feedback else 0.99
+            # arbitrary
+            return 0.01 if observation.feedback != 0 else 0.99
         elif isinstance(action, Pass):
-            return 0.01 if observation.feedback else 0.99
+            # arbitrary
+            return 0.01 if observation.feedback != 0 else 0.99
         else:
             return ValueError(f"Invalid action: {action}")
 
     def sample(self, next_state, action, **kwargs):
         if isinstance(action, Ask):
             prob = next_state.object_states[self.id]["prob"]
-            # TODO: handle vector-valued action
-            #y = np.random.binomial(1, prob) if action.val == self.id else 0
-            y = np.random.binomial(1, prob) if action.val[self.id] else 0
-            # return y if action[self.id], y ~ Bern(next_state.prob)
+            num_dots = prob.shape[0]
+            y = np.random.choice(a=num_dots, p=prob)
             return ArmObservation(self.id, y)
         elif isinstance(action, Select):
             return ArmObservation(self.id, 0)

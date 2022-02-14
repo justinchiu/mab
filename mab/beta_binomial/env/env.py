@@ -1,8 +1,8 @@
 import numpy as np
 import pomdp_py
 
-from models.transition_model import ProductTransitionModel
-from models.reward_model import RewardModel
+from mab.beta_bernoulli.models.transition_model import ProductTransitionModel
+from mab.beta_binomial.models.reward_model import RewardModel
 
 class RsEnvironment(pomdp_py.Environment):
     def __init__(self, num_dots, dot_vector, init_state):

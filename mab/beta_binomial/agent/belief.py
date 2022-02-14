@@ -4,7 +4,7 @@ import numpy as np
 
 import pomdp_py
 
-from domain.state import ArmState, ProductState, Go, Stop, CountdownState
+from mab.beta_bernoulli.domain.state import ArmState, ProductState, Go, Stop, CountdownState
 
 class ProductBelief(pomdp_py.OOBelief):
     def __init__(self, arm_beliefs):
@@ -61,6 +61,7 @@ def _initialize_histogram_belief(dim, max_turns, prior, num_bins):
     """
     Returns the belief distribution represented as a histogram
     """
+    raise NotImplementedError
     if prior is None:
         prior = [[1. / num_bins for _ in range(num_bins)] for _ in range(dim)]
     oo_hists = {}  # objid -> Histogram
@@ -118,7 +119,7 @@ def _initialize_particles_belief(
     joint state is sampled randomly from these particle beliefs.
     """
     # prior: Dict(arm_id -> List[probability of success])
-
+    raise NotImplementedError
     if prior is None:
         # uniform over discretization
         prior = {id: np.linspace(.01, .99, num_bins) for id in range(dim)}
@@ -135,9 +136,9 @@ def convert_state(state, dim, max_turns, robot_id, countdown_id):
     product_state = {}
     for id in range(dim):
         # sample an arm state
-        prob = state[id]
+        prob = np.array(state[id])
         product_state[id] = ArmState(
-            id, prob,
+            id, prob / prob.sum(),
             shape= "large", color = "grey", xy = (1,1),
         )
     product_state[robot_id] = Go()
@@ -164,8 +165,26 @@ def _initialize_particles_belief_enumerate(
         # uniform over discretization
         prior = {id: np.linspace(.01, .99, num_bins) for id in range(dim)}
         # alternative: sample from uniform / beta distribution
-         
+        mass = num_bins - 1
+        masses = np.linspace(.01, .99, num_bins)
+        # divide num_bins-1 items across dim items
+        def generate_step(accumulated_list, mass):
+            xs = []
+            for (y, m) in accumulated_list:
+                for add_m in range(mass - m + 1):
+                    xs.append((y + [add_m], m + add_m))
+            return xs
+        xs = [([], 0)]
+        for step in range(dim-1):
+            xs = generate_step(xs, mass)
+        # add final
+        xs_no_m = [x + [mass - m] for (x, m) in xs]
+        final_xs = [[masses[y] for y in x] for x in xs_no_m]
+        final_xs = np.array(final_xs)
+        prior = {id: final_xs for id in range(dim)}
+
     states = product(*(x.tolist() for x in prior.values()))
+    #states = list(states)
 
     particles = [
         convert_state(state, dim, max_turns, dim, dim+1)

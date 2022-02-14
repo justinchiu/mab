@@ -1,11 +1,12 @@
 import pomdp_py
 
-from models.policy_model import PolicyModel
-from models.transition_model import ProductTransitionModel
-from models.observation_model import ObservationModel
-from models.reward_model import RewardModel
+from mab.beta_bernoulli.models.transition_model import ProductTransitionModel
 
-from agent.belief import initialize_belief
+from mab.beta_binomial.models.observation_model import ObservationModel
+from mab.beta_binomial.models.reward_model import RewardModel
+from mab.beta_binomial.models.policy_model import PolicyModel
+
+from mab.beta_binomial.agent.belief import initialize_belief
 
 class RsAgent(pomdp_py.Agent):
     def __init__(
@@ -45,4 +46,4 @@ class RsAgent(pomdp_py.Agent):
         self._history = None
 
     def read(self, message):
-        asdf
+        pass

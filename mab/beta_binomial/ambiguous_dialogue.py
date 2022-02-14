@@ -11,8 +11,8 @@ import pomdp_py
 from pomdp_py.utils.debugging import TreeDebugger
 
 from problem import RankingAndSelectionProblem, belief_update
-from domain.action import Ask, Select, Pass
-from domain.observation import ProductObservation
+from mab.beta_bernoulli.domain.action import Ask, Select, Pass
+from mab.beta_bernoulli.domain.observation import ProductObservation
 
 
 max_turns = 5
@@ -43,7 +43,7 @@ problems = [RankingAndSelectionProblem(
     dots,
     max_turns,
     belief_rep = "particles",
-    num_bins=5,
+    num_bins=2,
     num_particles = 0,
     enumerate_belief = True,
 ) for dots in (dots_A, dots_B)]
