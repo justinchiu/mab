@@ -90,6 +90,9 @@ class PolicyModel(pomdp_py.RandomRollout):
             return Select(idx)
         else:
             idx = get_fresh_dot(belief_order, asks)
+            if idx is None:
+                # no dots were observed.
+                return Select(0)
             return Ask(one_hot_bool(num_dots, idx))
 
 if __name__ == "__main__":
