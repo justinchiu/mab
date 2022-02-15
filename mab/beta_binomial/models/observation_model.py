@@ -46,6 +46,8 @@ class ArmObservationModel(pomdp_py.ObservationModel):
 
     def sample(self, next_state, action, **kwargs):
         if isinstance(action, Ask):
+            if not action.val[self.id]:
+                return ArmObservation(self.id, 0)
             prob = next_state.object_states[self.id]["prob"]
             num_dots = prob.shape[0]
             y = np.random.choice(a=num_dots, p=prob)

@@ -29,10 +29,13 @@ def initialize_dots():
     dot_vector_B = np.array([1, 1, 1])
     attributes_A = [bs, gl, rm]
     attributes_B = [bs, gl, gl]
-    return dot_vector_A, dot_vector_B, attributes_A, attributes_B
+    matching = np.zeros((3, 3), dtype=bool)
+    matching[0,0] = 1
+    matching[1,1] = 1
+    return dot_vector_A, dot_vector_B, attributes_A, attributes_B, matching
 
 
-dots_A, dots_B, attrs_A, attrs_B  = initialize_dots()
+dots_A, dots_B, attrs_A, attrs_B, matching  = initialize_dots()
 print("dots A")
 print(dots_A)
 print(attrs_A)
@@ -42,7 +45,7 @@ print(attrs_B)
 
 problems = [RankingAndSelectionProblem(
     dots,
-    max_turns,
+    2*max_turns,
     belief_rep = "particles",
     num_bins=2,
     num_particles = 0,
@@ -50,9 +53,9 @@ problems = [RankingAndSelectionProblem(
 ) for dots in (dots_A, dots_B)]
 
 planner = pomdp_py.POMCP(
-    max_depth = max_turns, # need to change
+    max_depth = 2*max_turns, # need to change
     discount_factor = 1,
-    num_sims = 10000,
+    num_sims = 20000,
     exploration_const = 100,
     #rollout_policy = problems[0].agent.policy_model, # need to change per agent?
 )
@@ -150,34 +153,40 @@ def take_turn(
 
         # convert Ask from B to an Observation for A
         # WRONG
-        observation_for_A = ProductObservation({
-            id: observation_for_A_vec[id]
-        for id in range(observation_for_A_vec.shape[0])})
 
         if observation_for_A_vec.sum() > 0:
-            # create dummy action
-            action_A0 = Ask(observation_for_A_vec)
-            if agent.tree[action_A0][observation_for_A] is None:
-                force_expansion(
-                    planner, agent, action_A0, observation_for_A,
-                    steps_left = max_turns - turn,
+            for idx in observation_for_A_vec.nonzero()[0]:
+                # process each observation one dot at a time
+                # and treat them as different obs
+                obs = np.zeros(num_dots, dtype=bool)
+                obs[idx] = True
+                observation_for_A = ProductObservation({
+                    id: observation_for_A_vec[id] if id == idx else 0
+                for id in range(num_dots)})
+                # create dummy action
+                action_A0 = Ask(obs)
+                if agent.tree[action_A0][observation_for_A] is None:
+                    force_expansion(
+                        planner, agent, action_A0, observation_for_A,
+                        steps_left = max_turns - turn,
+                    )
+                next_node = agent.tree[action_A0][observation_for_A]
+                num_particles = len(next_node.belief.particles)
+                #print(f"num particles {len(agent.tree.belief.particles)}")
+                #print(f"num particles {num_particles}")
+                # particle reinvigoration fails even though a node has been visited > 0 times.
+                if num_particles == 0:
+                    force_expansion(
+                        planner, agent, action_A0, observation_for_A,
+                        steps_left = max_turns - turn,
+                    )
+                belief_update(
+                    agent, action_A0, observation_for_A,
+                    problem.env.state.object_states[agent.id],
+                    problem.env.state.object_states[agent.countdown_id],
+                    planner,
                 )
-            next_node = agent.tree[action_A0][observation_for_A]
-            num_particles = len(next_node.belief.particles)
-            #print(f"num particles {len(agent.tree.belief.particles)}")
-            #print(f"num particles {num_particles}")
-            # particle reinvigoration fails even though a node has been visited > 0 times.
-            if num_particles == 0:
-                # it's possible we have moved to a node that has not been expanded
-                # replan to populate beliefs
-                plan(planner, problems[id_A], steps_left = max_turns - turn)
-            belief_update(
-                agent, action_A0, observation_for_A,
-                problem.env.state.object_states[agent.id],
-                problem.env.state.object_states[agent.countdown_id],
-                planner,
-            )
-            #import pdb; pdb.set_trace()
+                #import pdb; pdb.set_trace()
     elif isinstance(action_B, Select):
         response_from_A = None
         # must select
@@ -203,6 +212,10 @@ response_from_A = None
 response_from_B = None
 rA = 0
 rB = 0
+irA = 0
+irB = 0
+select_A = None
+select_B = None
 default_response = ProductObservation({id: 0 for id in range(num_dots)})
 for turn in range(max_turns):
     # player A goes first
@@ -216,6 +229,9 @@ for turn in range(max_turns):
         num_dots = num_dots,
         max_turns = max_turns,
     )
+
+    #dd = TreeDebugger(problems[0].agent.tree)
+    #import pdb; pdb.set_trace()
 
     print(f"Turn {turn}")
     if isinstance(action_B, Ask):
@@ -237,9 +253,20 @@ for turn in range(max_turns):
     print(f"Action B: {action_B}")
 
 
-    rA += reward_A
-    rB += reward_B
+    irA += reward_A
+    irB += reward_B
     if isinstance(action_A, Select):
+        select_A = action_A.val
+    else:
+        rA -= 1
+    if isinstance(action_B, Select):
+        select_B = action_B.val
+    else:
+        rB -= 1
+    if select_A is not None and select_B is not None:
         break
 
-print(f"Total rewards: A ({rA}) B ({rB})")
+valid = select_A is not None and select_B is not None
+game_reward = 10 if valid and matching[select_A, select_B] else -100
+print(f"Total imagined rewards: A ({irA}) B ({irB})")
+print(f"Total rewards: A ({rA + game_reward}) B ({rB + game_reward})")

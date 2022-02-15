@@ -1,3 +1,4 @@
+import numpy as np
 import pomdp_py
 
 from mab.beta_bernoulli.domain.action import Ask, Select, Pass
@@ -8,6 +9,10 @@ class RewardModel(pomdp_py.RewardModel):
         super().__init__()
         self.robot_id = num_dots
         self.countdown_id = num_dots + 1
+        win_prob = np.array([1,0])
+        prob = 1 / (np.arange(num_dots-1)+1)
+        prob = np.vstack((1-prob, prob)).T
+        self.win_prob = np.vstack((win_prob, prob))
 
     def _reward_func(self, state, action):
         robot_state = state.object_states[self.robot_id]
@@ -27,10 +32,11 @@ class RewardModel(pomdp_py.RewardModel):
         elif isinstance(action, Select):
             win = 10
             fail = -100
+            score = np.array([fail, win])
             prob = state.object_states[action.val]["prob"]
             # prob gives the probability a reference resolves to n diff dots
-            prob_win = prob[1]
-            return prob_win * win + (1 - prob_win) * fail
+            score = np.einsum("s,w,sw->", prob, score, self.win_prob)
+            return score
         else:
             raise ValueError(f"Invalid action: {action}")
 
