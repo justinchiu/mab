@@ -59,6 +59,15 @@ def observe(action_A, attrs_A, attrs_B) -> np.array:
             observation_for_B[i] = action_A.val[attrs_A.index(attr)]
     return response_from_B, observation_for_B
 
+def force_expansion(planner, agent, action, obs, steps_left):
+    planner.clear_agent()
+    planner._agent = agent
+    planner.set_max_depth(steps_left)
+    planner.set_rollout_policy(agent.policy_model)
+    planner.force_expansion(action, obs)
+
+
+
 """
 On the first turn, player A and B must initialize their belief trees.
 Turns then proceed following
@@ -132,7 +141,10 @@ def take_turn(
                 # it's possible we have moved to a node that has not been expanded
                 # replan to populate beliefs
                 # TODO: replan with given action! just this call makes things not work...
-                plan(planner, problems[id_A], steps_left = max_turns - turn)
+                #plan(planner, problems[id_A], steps_left = max_turns - turn)
+                force_expansion(
+                    planner, agent, action_A0, observation_for_A,
+                    steps_left = max_turns - turn)
             belief_update(
                 agent, action_A0, observation_for_A,
                 problem.env.state.object_states[agent.id],

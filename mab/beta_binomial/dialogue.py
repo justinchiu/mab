@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 import pomdp_py
 
-from mab.beta_bernoulli.problem import RankingAndSelectionProblem, initialize_dots, belief_update
+from problem import RankingAndSelectionProblem, initialize_dots, belief_update
 from mab.beta_bernoulli.domain.action import Ask, Select, Pass
 from mab.beta_bernoulli.domain.observation import ProductObservation
 
