@@ -1,0 +1,117 @@
+dots A
+[False False  True  True  True False  True]
+[['red', 'small'], ['black', 'medium'], ['grey', 'medium-large'], ['blue', 'medium'], ['white', 'small'], ['white', 'large'], ['black', 'small']]
+dots B
+[ True  True  True False  True False False]
+[['grey', 'medium-large'], ['blue', 'medium'], ['white', 'small'], ['grey', 'medium-small'], ['black', 'small'], ['green', 'medium-small'], ['red', 'medium-large']]
+                                                      types |   # objects |   total size
+=========================================================== | =========== | ============
+                                                       dict |      261154 |     39.31 MB
+                                                        str |       55227 |     11.65 MB
+                           pomdp_py.algorithms.po_uct.QNode |      147720 |      6.76 MB
+                                                       code |       18221 |      3.09 MB
+                                                       type |        2714 |      2.50 MB
+                                                       list |       34581 |      2.44 MB
+                                                      tuple |       28737 |      1.63 MB
+  pomdp_py.representations.distribution.particles.Particles |        9852 |    923.62 KB
+               mab.beta_bernoulli.domain.state.ProductState |       10363 |    728.65 KB
+             mab.beta_bernoulli.domain.state.CountdownState |       10363 |    728.65 KB
+                                            sip.wrappertype |         651 |    675.16 KB
+                         mab.beta_bernoulli.domain.state.Go |        9501 |    668.04 KB
+                   pomdp_py.algorithms.pomcp.VNodeParticles |        9847 |    615.44 KB
+                                               sip.enumtype |         544 |    565.25 KB
+                                                        int |       16207 |    537.61 KB
+                                                      types |   # objects |   total size
+=========================================================== | =========== | ============
+                                                       dict |      503662 |     71.46 MB
+                           pomdp_py.algorithms.po_uct.QNode |      296820 |     13.59 MB
+                                                        str |       55394 |     11.67 MB
+                                                       list |       64403 |      4.27 MB
+                                                       code |       18221 |      3.09 MB
+                                                       type |        2728 |      2.51 MB
+                                                      tuple |       38845 |      2.17 MB
+  pomdp_py.representations.distribution.particles.Particles |       19792 |      1.81 MB
+               mab.beta_bernoulli.domain.state.ProductState |       20468 |      1.41 MB
+             mab.beta_bernoulli.domain.state.CountdownState |       20468 |      1.41 MB
+                         mab.beta_bernoulli.domain.state.Go |       18776 |      1.29 MB
+                   pomdp_py.algorithms.pomcp.VNodeParticles |       19786 |      1.21 MB
+   mab.beta_bernoulli.domain.observation.ProductObservation |       19786 |    927.47 KB
+                                                        int |       26162 |    887.53 KB
+                                            sip.wrappertype |         651 |    675.16 KB
+                                                      types |   # objects |   total size
+=========================================================== | =========== | ============
+                                                       dict |      648138 |     92.10 MB
+                           pomdp_py.algorithms.po_uct.QNode |      371400 |     17.00 MB
+                                                        str |       55411 |     11.67 MB
+                                                       list |       79319 |      5.31 MB
+                                                       code |       18221 |      3.09 MB
+                                                      tuple |       48845 |      2.70 MB
+                                                       type |        2728 |      2.51 MB
+  pomdp_py.representations.distribution.particles.Particles |       24764 |      2.27 MB
+               mab.beta_bernoulli.domain.state.ProductState |       30469 |      2.09 MB
+             mab.beta_bernoulli.domain.state.CountdownState |       30469 |      2.09 MB
+                         mab.beta_bernoulli.domain.state.Go |       28777 |      1.98 MB
+                   pomdp_py.algorithms.pomcp.VNodeParticles |       24758 |      1.51 MB
+   mab.beta_bernoulli.domain.observation.ProductObservation |       24759 |      1.13 MB
+                                                        int |       31135 |      1.04 MB
+                                            sip.wrappertype |         651 |    675.16 KB
+Turn 0
+Action A: Action(ask, [False False False  True False False False])
+Particle reinvigoration for 70 particles
+                                                      types |   # objects |   total size
+=========================================================== | =========== | ============
+                                                       dict |      652511 |     92.69 MB
+                           pomdp_py.algorithms.po_uct.QNode |      373185 |     17.08 MB
+                                                        str |       55431 |     11.68 MB
+                                                       list |       79679 |      5.34 MB
+                                                       code |       18221 |      3.09 MB
+                                                      tuple |       48994 |      2.71 MB
+                                                       type |        2728 |      2.51 MB
+  pomdp_py.representations.distribution.particles.Particles |       24884 |      2.28 MB
+               mab.beta_bernoulli.domain.state.ProductState |       30619 |      2.10 MB
+             mab.beta_bernoulli.domain.state.CountdownState |       30619 |      2.10 MB
+                   pomdp_py.algorithms.pomcp.VNodeParticles |       24877 |      1.52 MB
+                         mab.beta_bernoulli.domain.state.Go |       20194 |      1.39 MB
+   mab.beta_bernoulli.domain.observation.ProductObservation |       24879 |      1.14 MB
+                                                        int |       31255 |      1.04 MB
+                       mab.beta_bernoulli.domain.state.Stop |       10425 |    733.01 KB
+Response B: ProductObservation({0: 0, 1: 0, 2: 0, 3: 1, 4: 0, 5: 0, 6: 0})
+Action B: Action(select, 1)
+                                                      types |   # objects |   total size
+=========================================================== | =========== | ============
+                                                       dict |      593240 |     88.62 MB
+                           pomdp_py.algorithms.po_uct.QNode |      282030 |     12.91 MB
+                                                        str |       55450 |     11.68 MB
+                                                       list |       61451 |      4.58 MB
+                                                      tuple |       56477 |      3.11 MB
+                                                       code |       18221 |      3.09 MB
+               mab.beta_bernoulli.domain.state.ProductState |       38102 |      2.62 MB
+             mab.beta_bernoulli.domain.state.CountdownState |       38102 |      2.62 MB
+                                                       type |        2728 |      2.51 MB
+  pomdp_py.representations.distribution.particles.Particles |       18808 |      1.72 MB
+                       mab.beta_bernoulli.domain.state.Stop |       19483 |      1.34 MB
+                         mab.beta_bernoulli.domain.state.Go |       18619 |      1.28 MB
+                   pomdp_py.algorithms.pomcp.VNodeParticles |       18800 |      1.15 MB
+   mab.beta_bernoulli.domain.observation.ProductObservation |       18802 |    881.34 KB
+                                                        int |       25178 |    852.93 KB
+Turn 1
+Action A: Action(select, 3)
+                                                      types |   # objects |   total size
+=========================================================== | =========== | ============
+                                                       dict |      672802 |    101.74 MB
+                           pomdp_py.algorithms.po_uct.QNode |      305370 |     13.98 MB
+                                                        str |       55376 |     11.67 MB
+                                                       list |       66119 |      5.06 MB
+                                                      tuple |       66477 |      3.64 MB
+               mab.beta_bernoulli.domain.state.ProductState |       48102 |      3.30 MB
+             mab.beta_bernoulli.domain.state.CountdownState |       48102 |      3.30 MB
+                                                       code |       18221 |      3.09 MB
+                                                       type |        2728 |      2.51 MB
+                       mab.beta_bernoulli.domain.state.Stop |       29412 |      2.02 MB
+  pomdp_py.representations.distribution.particles.Particles |       20364 |      1.86 MB
+                         mab.beta_bernoulli.domain.state.Go |       18690 |      1.28 MB
+                   pomdp_py.algorithms.pomcp.VNodeParticles |       20356 |      1.24 MB
+   mab.beta_bernoulli.domain.observation.ProductObservation |       20357 |    954.23 KB
+                                                        int |       26733 |    907.60 KB
+Action B: Action(select, 1)
+Total rewards: A (9.0) B (10.0)

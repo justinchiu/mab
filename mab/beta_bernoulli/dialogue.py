@@ -4,10 +4,16 @@ from typing import Optional
 import numpy as np
 import pomdp_py
 
+from pympler import muppy, summary
+
 from mab.beta_bernoulli.problem import RankingAndSelectionProblem, initialize_dots, belief_update
 from mab.beta_bernoulli.domain.action import Ask, Select, Pass
 from mab.beta_bernoulli.domain.observation import ProductObservation
 
+def profile_memory():
+    all_objects = muppy.get_objects()
+    s = summary.summarize(all_objects)
+    summary.print_(s)
 
 def initialize_dots3():
     total_dots = 5
@@ -212,7 +218,9 @@ def main():
     # initialize trees for both agents
     # not sure this is necessary
     _ = plan(planner, problems[0], steps_left = max_turns)
+    profile_memory()
     _ = plan(planner, problems[1], steps_left = max_turns)
+    profile_memory()
 
     action_A = Pass()
     action_B = Pass()
@@ -235,6 +243,7 @@ def main():
             num_dots = num_dots,
             max_turns = max_turns
         )
+        profile_memory()
 
         print(f"Turn {turn}")
         if isinstance(action_B, Ask):
@@ -253,6 +262,7 @@ def main():
             num_dots = num_dots,
             max_turns = max_turns,
         )
+        profile_memory()
         if isinstance(action_A, Ask):
             print(f"Response B: {response_from_B}")
         print(f"Action B: {action_B}")
